@@ -1,0 +1,35 @@
+{
+  "name": "nuxt-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "seed": "node -e \"console.log('To seed the database, use the admin panel or run the API endpoint: POST /api/admin/database/seed')\"",
+    "db:status": "node -e \"console.log('To check database status, use the admin panel or access: GET /api/admin/database/seed')\"",
+    "setup:admin": "curl -X POST http://localhost:3000/api/setup/init -H 'Content-Type: application/json'"
+  },
+  "dependencies": {
+    "@nuxt/icon": "^1.11.0",
+    "@nuxt/image": "^1.10.0",
+    "@nuxtjs/tailwindcss": "^6.13.2",
+    "@pinia/nuxt": "^0.10.1",
+    "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "nuxt": "^3.16.1",
+    "nuxt-mongoose": "^1.0.6",
+    "nuxt-swiper": "^2.0.0",
+    "pinia": "^3.0.1",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/jsonwebtoken": "^9.0.9"
+  }
+}

@@ -1,0 +1,418 @@
+<script setup lang="ts">
+import { ref, computed, watch, watchEffect, onMounted, onUnmounted, nextTick } from 'vue'
+import { useProductsStore } from '~/stores/products'
+import type { Product } from '~/types'
+import ProductCard from '~/components/product/ProductCard.vue'
+import ErrorMessage from '~/components/ui/UiErrorMessage.vue'
+import Button from '~/components/ui/UiButton.vue'
+import PageHeroBanner from '~/components/hero-banner/HeroBannerPage.vue'
+
+// SEO metadata
+useHead({
+  title: 'Tüm Ürünler | Mebel',
+  meta: [
+    { name: 'description', content: 'Mebel\'de tüm mobilya ve ev dekorasyon ürünlerini keşfedin. Kaliteli ve şık mobilyalar uygun fiyatlarla.' }
+  ]
+})
+
+// Use products store instead of direct API calls for better caching and state management
+const productsStore = useProductsStore()
+
+// Initialize API composable
+const api = useApi()
+const apiState = useApiState()
+
+// State for products
+const products = ref<Product[]>([])
+const isLoading = computed(() => apiState.isLoading.value)
+const isLoadingMore = ref(false)
+const error = ref<string | null>(null)
+const observerRef = ref<HTMLElement | null>(null)
+
+// Pagination
+const currentPage = ref(1)
+const itemsPerPage = 12
+const totalPages = ref(1)
+const totalProducts = ref(0)
+const hasMoreProducts = ref(true)
+
+// Sort options - simplified to just essentials
+const sortOptions = [
+  { label: 'En Yeniler', value: 'newest' },
+  { label: 'Fiyat (Artan)', value: 'price_asc' },
+  { label: 'Fiyat (Azalan)', value: 'price_desc' },
+]
+const selectedSort = ref('newest')
+
+// Observer for infinite scroll
+let observer: IntersectionObserver | null = null
+
+// Computed value to create the params for the products fetch
+const productParams = computed(() => {
+  return {
+    limit: itemsPerPage,
+    page: currentPage.value,
+    sort: selectedSort.value,
+    skip: 0
+  }
+})
+
+// Use a route watcher to reset state on route change
+const route = useRoute()
+watch(() => route.fullPath, () => {
+  // Reset pagination when route changes
+  currentPage.value = 1
+  products.value = []
+})
+
+// Server-side fetch - simplified with better error handling
+try {
+  const { data: initialData } = await useAsyncData(
+    'products-initial',
+    async () => {
+      try {
+        // Make sure we use the correct absolute URL with protocol
+        const config = useRuntimeConfig()
+        const baseUrl = process.server 
+          ? config.public.apiBaseUrl || 'http://localhost:3000'
+          : ''
+          
+        // Use simpler fetch with explicit error handling
+        const response = await fetch(`${baseUrl}/api/products`)
+        
+        // Check for non-OK responses
+        if (!response.ok) {
+          console.error(`API error: ${response.status} ${response.statusText}`)
+          return { products: [], count: 0 }
+        }
+        
+        // Check if content type is JSON
+        const contentType = response.headers.get('content-type')
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error(`Expected JSON but got ${contentType}`)
+          return { products: [], count: 0 }
+        }
+        
+        // Parse JSON safely
+        const data = await response.json()
+        return data
+      } catch (error) {
+        console.error('Server-side fetch error:', error)
+        return { products: [], count: 0 }
+      }
+    },
+    { 
+      server: true,
+    }
+  )
+
+  // Initialize with server data if available
+  if (initialData.value) {
+    products.value = initialData.value.products || []
+    totalProducts.value = initialData.value.count || 0
+    totalPages.value = Math.ceil(totalProducts.value / itemsPerPage)
+    hasMoreProducts.value = products.value.length >= itemsPerPage
+  }
+} catch (error) {
+  console.error('Error in server-side data fetching:', error)
+}
+
+// Improved fetch products function with better error handling
+const fetchProducts = async (isInitialFetch = false) => {
+  if (isInitialFetch) {
+    currentPage.value = 1 
+    products.value = [] 
+  } else {
+    isLoadingMore.value = true
+  }
+  
+  error.value = null
+  
+  try {
+    console.log('Fetching products')
+    
+    // Using direct fetch for more control over error handling
+    const response = await fetch('/api/products')
+    
+    // Check for non-OK responses
+    if (!response.ok) {
+      throw new Error(`API returned ${response.status} ${response.statusText}`)
+    }
+    
+    // Check content type
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      // Try to get text to see what was returned
+      const text = await response.text()
+      console.error('Received non-JSON response:', text.substring(0, 100) + '...')
+      throw new Error('Server returned HTML instead of JSON data')
+    }
+    
+    // Parse JSON
+    const data = await response.json()
+    
+    if (data && Array.isArray(data.products)) {
+      if (isInitialFetch) {
+        products.value = data.products
+      } else {
+        // Only add products if we actually got any
+        if (data.products.length > 0) {
+          products.value = [...products.value, ...data.products]
+        }
+      }
+      
+      // Update to use count instead of pagination
+      totalProducts.value = data.count || 0
+      
+      // Check if we've reached the end based on number of products received
+      const loadedNewProducts = data.products.length
+      hasMoreProducts.value = loadedNewProducts >= itemsPerPage
+      
+      // For totalPages, calculate based on total count and items per page
+      totalPages.value = Math.ceil(totalProducts.value / itemsPerPage)
+    } else {
+      console.error('Invalid response format:', data)
+      error.value = 'Ürünler yüklenirken bir hata oluştu.'
+    }
+  } catch (err) {
+    console.error('Error fetching products:', err)
+    error.value = err instanceof Error ? err.message : 'Ürünler yüklenirken bir hata oluştu.'
+  } finally {
+    if (!isInitialFetch) {
+      isLoadingMore.value = false
+    }
+  }
+}
+
+// Setup infinite scrolling with Intersection Observer
+const setupInfiniteScroll = () => {
+  if (typeof window === 'undefined' || !window.IntersectionObserver) return
+  
+  // Cleanup previous observer if it exists
+  if (observer) {
+    observer.disconnect()
+    observer = null
+  }
+  
+  // Wait for next tick to ensure the observer element is in the DOM
+  nextTick(() => {
+    if (!observerRef.value) {
+      console.error('Observer element not found in DOM');
+      return;
+    }
+    
+    observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMoreProducts.value && !isLoadingMore.value && !isLoading.value) {
+        console.log('Loading more products, incrementing to page:', currentPage.value + 1);
+        currentPage.value++
+        fetchProducts(false)
+      }
+    }, {
+      rootMargin: '200px', // Trigger before user reaches bottom
+      threshold: 0.1
+    })
+    
+    observer.observe(observerRef.value)
+    console.log('Infinite scroll observer setup complete');
+  })
+}
+
+// Handle sort change
+function changeSort(sort: string) {
+  if (selectedSort.value === sort) return
+  
+  selectedSort.value = sort
+  resetAndFetch()
+}
+
+// Reset pagination and fetch new products
+const resetAndFetch = () => {
+  products.value = []
+  currentPage.value = 1
+  fetchProducts(true)
+}
+
+// Format price with Turkish locale
+const formatPrice = (price: number) => {
+  return price.toLocaleString('tr-TR')
+}
+
+// Calculate discount percentage
+const calculateDiscount = (originalPrice: number, salePrice: number) => {
+  return Math.round((1 - salePrice / originalPrice) * 100)
+}
+
+// Set up observers and initial fetch
+onMounted(() => {
+  // If products were not loaded in SSR, fetch them now
+  if (products.value.length === 0) {
+    fetchProducts(true)
+  }
+  
+  // Setup infinite scroll after initial data is loaded
+  nextTick(() => {
+    setupInfiniteScroll()
+  })
+})
+
+// Clean up observers
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect()
+  }
+})
+
+// Cleanup on route changes
+const router = useRouter()
+onBeforeRouteLeave(() => {
+  // Clean up any remaining observers
+  if (observer) {
+    observer.disconnect()
+    observer = null
+  }
+  
+  // Reset page number for next visit
+  currentPage.value = 1
+})
+
+// Watch for filter/sort changes to reset pagination and refetch
+watch([selectedSort], () => {
+  resetAndFetch()
+})
+
+// Re-setup infinite scroll when loading states change
+watch([isLoading], () => {
+  if (!isLoading.value) {
+    nextTick(() => {
+      setupInfiniteScroll()
+    })
+  }
+})
+</script>
+
+<template>
+  <div class="min-h-screen bg-warmWhite">
+    <!-- Hero Banner -->
+    <PageHeroBanner
+      title="Yaşam alanınızı dönüştürecek mobilyalar"
+      highlighted-text="dönüştürecek"
+      description="Mebel'de kalite ve estetik bir araya geliyor. Modern, şık ve rahat mobilyalarımızla evinizi yeniden keşfedin."
+      color-scheme="amber"
+    />
+    
+    <div class="container mx-auto px-4 py-12">
+      <!-- Filters and sorting -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
+        <div class="text-amber-900 font-medium">
+          <span class="text-2xl mr-2">{{ totalProducts }}</span> 
+          <span class="text-gray-600">ürün bulundu</span>
+        </div>
+        
+        <div class="flex items-center bg-white rounded-lg shadow-sm border border-gray-100 p-1">
+          <label for="sort" class="text-sm text-gray-600 px-3">Sırala:</label>
+          <select 
+            id="sort"
+            v-model="selectedSort"
+            @change="changeSort(selectedSort)"
+            class="py-2 px-4 rounded-md focus:outline-none focus:ring-0 text-gray-700 bg-transparent"
+          >
+            <option v-for="option in sortOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+      
+      <!-- Loading State -->
+      <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-12">
+        <div 
+          v-for="i in itemsPerPage" 
+          :key="i" 
+          class="bg-gray-100 animate-pulse rounded-xl h-96"
+        ></div>
+      </div>
+      
+      <!-- Error State -->
+      <ErrorMessage 
+        v-if="error" 
+        :message="error" 
+        @retry="resetAndFetch" 
+      >
+        <template #retry>
+          <Button @click="resetAndFetch">
+            <Icon name="ph:refresh" class="text-gray-600 mr-2" />
+            <span class="text-gray-600">Tekrar deneyin</span>
+          </Button>
+        </template>
+      </ErrorMessage>
+      
+      <!-- Empty State -->
+      <div v-else-if="products.length === 0" class="text-center text-gray-500 py-12">
+        <Icon name="ph:shopping-bag" class="text-gray-300 w-20 h-20 mx-auto mb-4" />
+        <p class="text-xl">Henüz ürün bulunmamaktadır.</p>
+      </div>
+      
+      <!-- Products Grid -->
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-16">
+        <ProductCard 
+          v-for="product in products" 
+          :key="product.id" 
+          :product="product" 
+        />
+      </div>
+      
+      <!-- Loading more indicator -->
+      <div v-if="isLoadingMore" class="flex justify-center py-8">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 border-t-2 border-r-2 border-amber-700 rounded-full animate-spin"></div>
+          <span class="text-gray-600 font-medium">Daha fazla ürün yükleniyor...</span>
+        </div>
+      </div>
+      
+      <!-- End of results message -->
+      <div v-if="!hasMoreProducts && products.length > 0 && !isLoadingMore" 
+        class="text-center text-gray-500 py-8 font-medium">
+        Tüm ürünler gösteriliyor
+      </div>
+      
+      <!-- Intersection observer element -->
+      <div ref="observerRef" class="h-4 w-full"></div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+/* Base colors for furniture theme */
+:root {
+  --color-warm-white: #faf9f7;
+  --color-wood-accent: #c8a887;
+  --color-dark-wood: #8b572a;
+}
+
+.bg-warmWhite {
+  background-color: var(--color-warm-white);
+}
+
+/* Smooth fade in for products */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.grid > a {
+  animation: fadeIn 0.5s ease forwards;
+  animation-delay: calc(var(--animation-order, 0) * 0.1s);
+  opacity: 0;
+}
+
+/* Typography enhancements */
+h1, h2, h3 {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+/* Enhance focus styles for accessibility */
+button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--color-dark-wood);
+  outline-offset: 2px;
+}
+</style> 

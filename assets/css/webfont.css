@@ -1,0 +1,73 @@
+
+@font-face {
+    font-family: 'Darker Grotesque';
+    src: local('Darker Grotesque Light'), local('DarkerGrotesque-Light'),
+        url('~/assets/webwebfonts/DarkerGrotesque-Light.woff2') format('woff2'),
+        url('~/assets/webfonts/DarkerGrotesque-Light.woff') format('woff');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Darker Grotesque';
+    src: local('Darker Grotesque Bold'), local('DarkerGrotesque-Bold'),
+        url('~/assets/webfonts/DarkerGrotesque-Bold.woff2') format('woff2'),
+        url('~/assets/webfonts/DarkerGrotesque-Bold.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Darker Grotesque';
+    src: local('Darker Grotesque Regular'), local('DarkerGrotesque-Regular'),
+        url('~/assets/webfonts/DarkerGrotesque-Regular.woff2') format('woff2'),
+        url('~/assets/webfonts/DarkerGrotesque-Regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Darker Grotesque';
+    src: local('Darker Grotesque SemiBold'), local('DarkerGrotesque-SemiBold'),
+        url('~/assets/webfonts/DarkerGrotesque-SemiBold.woff2') format('woff2'),
+        url('~/assets/webfonts/DarkerGrotesque-SemiBold.woff') format('woff');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Darker Grotesque';
+    src: local('Darker Grotesque Medium'), local('DarkerGrotesque-Medium'),
+        url('~/assets/webfonts/DarkerGrotesque-Medium.woff2') format('woff2'),
+        url('~/assets/webfonts/DarkerGrotesque-Medium.woff') format('woff');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Darker Grotesque';
+    src: local('Darker Grotesque Black'), local('DarkerGrotesque-Black'),
+        url('~/assets/webfonts/DarkerGrotesque-Black.woff2') format('woff2'),
+        url('~/assets/webfonts/DarkerGrotesque-Black.woff') format('woff');
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Darker Grotesque';
+    src: local('Darker Grotesque ExtraBold'), local('DarkerGrotesque-ExtraBold'),
+        url('~/assets/webfonts/DarkerGrotesque-ExtraBold.woff2') format('woff2'),
+        url('~/assets/webfonts/DarkerGrotesque-ExtraBold.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+}
+
+
+
