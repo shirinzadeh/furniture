@@ -1,5 +1,5 @@
 import { defineNuxtRouteMiddleware, navigateTo, useCookie, useState } from '#imports'
-import { useAuthStore } from '~/stores/auth'
+import { useAuthStore } from '~/stores'
 import { useToast } from '~/composables/useToast'
 
 export default defineNuxtRouteMiddleware(async (to) => {

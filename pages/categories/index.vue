@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import type { Category } from '~/types'
-import { useCategoriesStore } from '~/stores/categories'
+import { useCategoriesStore } from '~/stores'
 
 // SEO metadata
 useHead({

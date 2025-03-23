@@ -9,7 +9,8 @@ interface AuthState {
   error: string | null
 }
 
-export const useAuthStore = defineStore('auth', {
+// Define the store but don't export it directly
+const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
     user: null,
     token: null,
@@ -140,4 +141,7 @@ export const useAuthStore = defineStore('auth', {
       }
     }
   }
-}) 
+})
+
+// Export as default
+export default useAuthStore 

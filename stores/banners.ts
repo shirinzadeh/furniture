@@ -8,7 +8,8 @@ interface BannersState {
   error: string | null
 }
 
-export const useBannersStore = defineStore('banners', {
+// Define the store but don't export it directly
+const useBannersStore = defineStore('banners', {
   state: (): BannersState => ({
     banners: [],
     loading: false,
@@ -125,4 +126,7 @@ export const useBannersStore = defineStore('banners', {
       }
     }
   }
-}) 
+})
+
+// Export as default
+export default useBannersStore 

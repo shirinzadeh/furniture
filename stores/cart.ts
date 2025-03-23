@@ -7,9 +7,11 @@ export interface CartItem {
   image: string
   quantity: number
   slug: string
+  product?: string // Add product field for backward compatibility
 }
 
-export const useCartStore = defineStore('cart', {
+// Define the store but don't export it directly
+const useCartStore = defineStore('cart', {
   state: () => ({
     items: [] as CartItem[],
     loading: false,
@@ -22,6 +24,8 @@ export const useCartStore = defineStore('cart', {
     totalPrice: (state) => 
       state.items.reduce((total, item) => total + (item.price * item.quantity), 0),
     hasItems: (state) => state.items.length > 0,
+    isEmpty: (state) => state.items.length === 0,
+    count: (state) => state.items.length,
   },
 
   actions: {
@@ -40,6 +44,11 @@ export const useCartStore = defineStore('cart', {
       }
     },
     
+    // Alias for addToCart for backward compatibility
+    addItem(product: CartItem) {
+      this.addToCart(product)
+    },
+    
     removeFromCart(productId: string) {
       this.items = this.items.filter(item => item.productId !== productId)
       
@@ -47,6 +56,11 @@ export const useCartStore = defineStore('cart', {
       if (process.client) {
         localStorage.setItem('cart', JSON.stringify(this.items))
       }
+    },
+    
+    // Alias for removeFromCart for backward compatibility
+    removeItem(productId: string) {
+      this.removeFromCart(productId)
     },
     
     updateQuantity(productId: string, quantity: number) {
@@ -85,4 +99,7 @@ export const useCartStore = defineStore('cart', {
       }
     }
   },
-}) 
+})
+
+// Export as default
+export default useCartStore 

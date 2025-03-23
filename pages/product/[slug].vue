@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useCartStore } from '~/stores/cart'
-import { useProductsStore } from '~/stores/products'
+import { useCartStore, useProductsStore } from '~/stores'
 import type { Product } from '~/types'
 
 const route = useRoute()

@@ -87,8 +87,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useAuthStore } from '~/stores/auth'
-import { useAdminStore } from '~/stores/admin'
+import { useAuthStore, useAdminStore } from '~/stores'
 
 definePageMeta({
   layout: false

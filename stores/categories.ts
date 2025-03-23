@@ -9,7 +9,8 @@ interface CategoriesState {
   error: string | null
 }
 
-export const useCategoriesStore = defineStore('categories', {
+// Define the store but don't export it directly
+const useCategoriesStore = defineStore('categories', {
   state: (): CategoriesState => ({
     categories: [],
     currentCategory: null,
@@ -153,4 +154,7 @@ export const useCategoriesStore = defineStore('categories', {
       }
     }
   }
-}) 
+})
+
+// Export as default
+export default useCategoriesStore 

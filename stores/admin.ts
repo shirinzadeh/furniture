@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { useApi } from '~/composables/useApi'
-import { useAuthStore } from './auth'
+import useAuthStore from './auth'
 
 interface AdminState {
   sidebarOpen: boolean
@@ -11,7 +11,8 @@ interface AdminState {
   } | null
 }
 
-export const useAdminStore = defineStore('admin', {
+// Define the store but don't export it directly
+const useAdminStore = defineStore('admin', {
   state: (): AdminState => ({
     sidebarOpen: true,
     lastNotification: null
@@ -63,4 +64,7 @@ export const useAdminStore = defineStore('admin', {
       }
     }
   }
-}) 
+})
+
+// Export as default
+export default useAdminStore 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, watchEffect, onMounted, onUnmounted, nextTick } from 'vue'
-import { useProductsStore } from '~/stores/products'
+import { useProductsStore } from '~/stores'
 import type { Product } from '~/types'
 import ProductCard from '~/components/product/ProductCard.vue'
 import ErrorMessage from '~/components/ui/UiErrorMessage.vue'

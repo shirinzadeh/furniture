@@ -2,7 +2,7 @@ import type { UseFetchOptions } from 'nuxt/app'
 import type { FetchError } from 'ofetch'
 import type { FetchContext, FetchResponse } from 'ofetch'
 import { unref, ref } from 'vue'
-import { useAdminStore } from '~/stores/admin'
+import { useAdminStore } from '~/stores'
 import { useToast } from '~/composables/useToast'
 
 export type ApiError = {

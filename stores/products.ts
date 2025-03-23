@@ -19,7 +19,8 @@ interface ProductsState {
   }
 }
 
-export const useProductsStore = defineStore('products', {
+// Define the store but don't export it directly
+const useProductsStore = defineStore('products', {
   state: (): ProductsState => ({
     products: [],
     featuredProducts: [],
@@ -281,4 +282,7 @@ export const useProductsStore = defineStore('products', {
       }
     }
   }
-}) 
+})
+
+// Export as default
+export default useProductsStore 
