@@ -51,28 +51,53 @@ export default defineEventHandler(async (event) => {
     // Determine sort order based on query type
     let sortOptions: any = { createdAt: -1 } // Default sort
     
+    // Define index hints based on the sort criteria to improve query performance
+    let indexHint: string | null = null
+    
     if (recommended) {
       // For recommended products, prioritize featured items
       sortOptions = { featured: -1, createdAt: -1 }
+      indexHint = 'featured_1_createdAt_-1'
     } else if (bestseller) {
-      // For bestseller products, we would normally sort by sales count
-      // Since we don't have that data, we'll just use featured and creation date as a proxy
       sortOptions = { featured: -1, createdAt: -1 }
+      indexHint = 'featured_1_createdAt_-1'
     } else if (onSale) {
-      // For sale products, prioritize bigger discounts
-      // We can calculate this using an aggregation pipeline in a more complex implementation
-      // For now, just sort by creation date
       sortOptions = { createdAt: -1 }
+      indexHint = 'createdAt_-1'
     }
     
-    // Get products with pagination
+    // Define fields to project (include only necessary fields)
+    const projection = {
+      name: 1,
+      slug: 1,
+      price: 1,
+      salePrice: 1,
+      images: 1,
+      inStock: 1,
+      featured: 1,
+      categoryId: 1
+    }
+    
+    // Get products with pagination - using Promise.all for parallel execution
+    // Create base query
+    let productsQuery = ProductModel.find(filter, projection)
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limit)
+      .populate({
+        path: 'category',
+        select: 'name slug image' // Only select needed fields from category
+      })
+      .lean(); // Convert to plain JS objects (faster)
+    
+    // Apply hint only if indexHint is not null
+    if (indexHint) {
+      productsQuery = productsQuery.hint(indexHint);
+    }
+    
     const [products, total] = await Promise.all([
-      ProductModel.find(filter)
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(limit)
-        .populate('category'),
-      ProductModel.countDocuments(filter)
+      productsQuery,
+      ProductModel.countDocuments(filter).lean()
     ])
     
     // Calculate pagination data
@@ -88,6 +113,7 @@ export default defineEventHandler(async (event) => {
       }
     }
   } catch (error: any) {
+    console.error('Product fetch error:', error)
     throw createError({
       statusCode: error.statusCode || 500,
       message: error.message || 'Internal server error'

@@ -16,7 +16,9 @@ export default defineNuxtConfig({
       connectTimeoutMS: 30000, // Increase timeout to 30 seconds
       socketTimeoutMS: 30000,  // Socket timeout
       serverSelectionTimeoutMS: 30000,
-      maxPoolSize: 10         // Connection pool size
+      maxPoolSize: 20,         // Increased connection pool size
+      minPoolSize: 5,          // Keep minimum connections ready
+      maxIdleTimeMS: 60000     // Close idle connections after 1 minute
     }
   },
   runtimeConfig: {

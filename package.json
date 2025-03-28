@@ -10,7 +10,8 @@
     "postinstall": "nuxt prepare",
     "seed": "node -e \"console.log('To seed the database, use the admin panel or run the API endpoint: POST /api/admin/database/seed')\"",
     "db:status": "node -e \"console.log('To check database status, use the admin panel or access: GET /api/admin/database/seed')\"",
-    "setup:admin": "curl -X POST http://localhost:3000/api/setup/init -H 'Content-Type: application/json'"
+    "setup:admin": "curl -X POST http://localhost:3000/api/setup/init -H 'Content-Type: application/json'",
+    "create-indexes": "npx tsx ./server/scripts/create-indexes.ts"
   },
   "dependencies": {
     "@nuxt/icon": "^1.11.0",

@@ -12,8 +12,27 @@ export default defineEventHandler(async (event) => {
       })
     }
     
-    // Find product by slug and populate category
-    const product = await ProductModel.findOne({ slug }).populate('category')
+    // Define fields to project
+    const projection = {
+      name: 1,
+      slug: 1,
+      description: 1,
+      price: 1,
+      salePrice: 1,
+      images: 1,
+      inStock: 1,
+      stock: 1,
+      featured: 1,
+      categoryId: 1
+    }
+    
+    // Find product by slug and populate category with optimizations
+    const product = await ProductModel.findOne({ slug }, projection)
+      .populate({
+        path: 'category',
+        select: 'name slug image' // Only select needed fields
+      })
+      .lean() // Convert to plain JS object for better performance
     
     if (!product) {
       throw createError({
@@ -24,6 +43,7 @@ export default defineEventHandler(async (event) => {
     
     return product
   } catch (error: any) {
+    console.error('Product detail fetch error:', error)
     throw createError({
       statusCode: error.statusCode || 500,
       message: error.message || 'Internal server error'
