@@ -4,7 +4,7 @@ import type { Product, Category } from '~/types'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import ProductCard from '~/components/product/ProductCard.vue'
 import Button from '~/components/ui/UiButton.vue'
-import FeaturedCategories from '~/components/categories/CategoriesFeatured.vue'
+
 
 // Import Pinia stores
 const productsStore = useProductsStore()
@@ -89,7 +89,7 @@ const fetchWinterFlashSaleProducts = async () => {
         retryCount.value++
         console.log(`No winter flash sale products found, retrying (${retryCount.value}/${maxRetries})`)
         // Clear cache before retrying
-        productsStore.clearCache(`sale-products-8`)
+        productsStore.clearCache()
         // Instead of setTimeout, use a flag and watch
         shouldRetryWinterSale.value = true
         return
@@ -104,7 +104,7 @@ const fetchWinterFlashSaleProducts = async () => {
       retryCount.value++
       console.log(`Error fetching winter flash sale products, retrying (${retryCount.value}/${maxRetries})`)
       // Clear cache before retrying
-      productsStore.clearCache(`sale-products-8`)
+      productsStore.clearCache()
       // Instead of setTimeout, use a flag and watch
       shouldRetryWinterSale.value = true
       return
@@ -132,7 +132,7 @@ const fetchBestsellerProducts = async () => {
         bestsellerRetryCount.value++
         console.log(`No bestseller products found, retrying (${bestsellerRetryCount.value}/${maxRetries})`)
         // Clear cache before retrying
-        productsStore.clearCache(`bestseller-products-8`)
+        productsStore.clearCache()
         // Instead of setTimeout, use a flag and onMounted
         shouldRetryBestsellers.value = true
         return
@@ -147,7 +147,7 @@ const fetchBestsellerProducts = async () => {
       bestsellerRetryCount.value++
       console.log(`Error fetching bestseller products, retrying (${bestsellerRetryCount.value}/${maxRetries})`)
       // Clear cache before retrying
-      productsStore.clearCache(`bestseller-products-8`)
+      productsStore.clearCache()
       // Instead of setTimeout, use a flag and onMounted
       shouldRetryBestsellers.value = true
       return
@@ -164,7 +164,7 @@ const fetchRecommendedProducts = async () => {
   
   try {
     // Use the dedicated method for fetching recommended products
-    const response = await productsStore.fetchRecommendedProducts(10)
+    const response = await productsStore.fetchRecommendedProducts('10')
     
     if (response) {
       // Use the recommendedProducts from the store
@@ -175,7 +175,7 @@ const fetchRecommendedProducts = async () => {
         recommendedRetryCount.value++
         console.log(`No recommended products found, retrying (${recommendedRetryCount.value}/${maxRetries})`)
         // Clear cache before retrying
-        productsStore.clearCache(`recommended-products-10`)
+        productsStore.clearCache()
         // Instead of setTimeout, use a flag and onMounted
         shouldRetryRecommended.value = true
         return
@@ -190,7 +190,7 @@ const fetchRecommendedProducts = async () => {
       recommendedRetryCount.value++
       console.log(`Error fetching recommended products, retrying (${recommendedRetryCount.value}/${maxRetries})`)
       // Clear cache before retrying
-      productsStore.clearCache(`recommended-products-10`)
+      productsStore.clearCache()
       // Instead of setTimeout, use a flag and onMounted
       shouldRetryRecommended.value = true
       return
@@ -269,16 +269,16 @@ if (!recommendedProducts.value) recommendedProducts.value = [];
     <HeroBanner />
     
     <!-- Winter Flash Sale Section -->
-    <WinterFlashSaleSection 
+    <ProductWinterFlashSale 
       :external-products="winterFlashSaleProducts"
       :external-loading="isLoadingWinterSale"
       :external-error="winterSaleError"
     />
     
     <!-- Featured Categories -->
-    <FeaturedCategories
+    <CategoriesFeatured
       :categories="categoriesStore.categories"
-      :loading="categoriesStore.isLoading"
+      :loading="categoriesStore.loading"
       :error="errorMessage"
     />
     
@@ -287,7 +287,7 @@ if (!recommendedProducts.value) recommendedProducts.value = [];
       <div class="container mx-auto px-4">
         <h2 class="text-3xl font-bold text-center mb-8">Öne Çıkan Ürünler</h2>
         
-        <div v-if="productsStore.isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div v-if="productsStore.loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div v-for="i in 8" :key="i" class="bg-gray-200 animate-pulse rounded-lg h-80"></div>
         </div>
         
@@ -352,21 +352,21 @@ if (!recommendedProducts.value) recommendedProducts.value = [];
     </section>
     
     <!-- Winter Flash Price Section -->
-    <WinterFlashPriceSection 
+    <ProductWinterFlashPrice 
       :external-products="winterFlashSaleProducts"
       :external-loading="isLoadingWinterSale"
       :external-error="winterSaleError"
     />
     
     <!-- Recommended Products Section -->
-    <RecommendedProductsSection 
+    <ProductRecommended 
       :external-products="recommendedProducts"
       :external-loading="isLoadingRecommended"
       :external-error="recommendedError"
     />
     
     <!-- Season Bestsellers Section -->
-    <SeasonBestSellersSection 
+    <ProductSeasonBestSeller
       :products="bestsellerProducts"
       :loading="isLoadingBestsellers"
       :error="bestsellersError"

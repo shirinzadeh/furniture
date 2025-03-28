@@ -233,7 +233,7 @@ import { ref, reactive, onMounted } from 'vue'
 // Define page meta
 definePageMeta({
   layout: 'admin',
-  middleware: ['admin-auth']
+  middleware: ['admin']
 })
 // Define banner type
 interface Banner {
@@ -275,7 +275,7 @@ const fetchBanners = async () => {
   
   try {
     const { data, error: fetchError } = await useAsyncData('admin-banners', () => 
-      $fetch('/api/admin/banners')
+      $fetch<{ banners: Banner[] }>('/api/admin/banners')
     )
     
     if (fetchError.value) {
@@ -283,7 +283,7 @@ const fetchBanners = async () => {
     }
     
     if (data.value) {
-      banners.value = data.value.banners || []
+      banners.value = data.value.banners
     } else {
       error.value = 'No data returned from API'
     }

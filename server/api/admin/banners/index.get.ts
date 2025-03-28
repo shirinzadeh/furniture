@@ -3,21 +3,24 @@ import { BannerModel } from '~/server/models/Banner'
 
 export default defineEventHandler(async (event) => {
   try {
+    // Admin middleware already verifies admin access
+    
     const query = getQuery(event)
     
     // Parse query parameters
-    const activeOnly = query.activeOnly !== 'false' // Default to true
+    const sortBy = query.sortBy as string || 'order'
+    const sortOrder = query.sortOrder as string === 'asc' ? 1 : -1
     
-    // Build filter
-    const filter: any = {}
-    if (activeOnly) {
-      filter.active = true
+    // Build sort object
+    const sort: any = {}
+    sort[sortBy] = sortOrder
+    
+    // Get banners with sorting
+    const banners = await BannerModel.find().sort(sort)
+    
+    return {
+      banners
     }
-    
-    // Get banners sorted by order
-    const banners = await BannerModel.find(filter).sort({ order: 1 })
-    
-    return { banners }
   } catch (error: any) {
     throw createError({
       statusCode: error.statusCode || 500,

@@ -55,7 +55,7 @@ const fetchWinterFlashPriceProducts = async () => {
         retryCount.value++
         console.log(`No winter flash price products found, retrying (${retryCount.value}/${maxRetries})`)
         // Clear cache before retrying
-        productsStore.clearCache(`sale-products-8`)
+        productsStore.clearCache()
         setTimeout(() => fetchWinterFlashPriceProducts(), 1000) // Wait 1 second before retrying
         return
       }
@@ -69,7 +69,7 @@ const fetchWinterFlashPriceProducts = async () => {
       retryCount.value++
       console.log(`Error fetching winter flash price products, retrying (${retryCount.value}/${maxRetries})`)
       // Clear cache before retrying
-      productsStore.clearCache(`sale-products-8`)
+      productsStore.clearCache()
       setTimeout(() => fetchWinterFlashPriceProducts(), 1000) // Wait 1 second before retrying
       return
     }
@@ -112,7 +112,7 @@ onMounted(() => {
     </div>
     
     <!-- Flash Price Section with winter theme -->
-    <FlashPriceSection
+    <ProductFlashPrice
       title="FLAŞ FİYATLARI"
       subtitle="İçinizi ısıtacak flaş fiyatlar"
       :products="winterFlashPriceProducts"

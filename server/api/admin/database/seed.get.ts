@@ -13,12 +13,16 @@ export default defineEventHandler(async () => {
       categories,
       products,
       banners,
-      admins
+      admins,
+      flashSaleProducts,
+      bestsellers
     ] = await Promise.all([
       CategoryModel.countDocuments(),
       ProductModel.countDocuments(),
       BannerModel.countDocuments(),
-      UserModel.countDocuments({ role: 'admin' })
+      UserModel.countDocuments({ role: 'admin' }),
+      ProductModel.countDocuments({ salePrice: { $ne: null } }),
+      ProductModel.countDocuments({ featured: true })
     ])
     
     // Check if database is empty
@@ -30,7 +34,9 @@ export default defineEventHandler(async () => {
         categories,
         products,
         banners,
-        admins
+        admins,
+        flashSaleProducts,
+        bestsellers
       },
       isEmpty
     }
