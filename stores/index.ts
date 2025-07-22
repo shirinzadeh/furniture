@@ -1,15 +1,8 @@
-// Re-export all stores for easier imports
-import useAuthStoreImpl from './auth'
-import useAdminStoreImpl from './admin'
-import useProductsStoreImpl from './products'
-import useCategoriesStoreImpl from './categories'
-import useBannersStoreImpl from './banners'
-import useCartStoreImpl from './cart'
-
-// Export with consistent naming for use throughout the app
-export const useAuthStore = useAuthStoreImpl
-export const useAdminStore = useAdminStoreImpl
-export const useProductsStore = useProductsStoreImpl
-export const useCategoriesStore = useCategoriesStoreImpl
-export const useBannersStore = useBannersStoreImpl
-export const useCartStore = useCartStoreImpl 
+// Export all stores from a single index file for better imports
+export { default as useAuthStore } from './auth'
+export { default as useCartStore } from './cart'
+export { default as useFavoritesStore } from './favorites'
+export { default as useAdminStore } from './admin'
+export { default as useBannersStore } from './banners'
+export { default as useCategoriesStore } from './categories'
+export { default as useProductsStore } from './products' 

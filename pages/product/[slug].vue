@@ -52,10 +52,11 @@ async function fetchProduct() {
     product.value = await Promise.race([fetchPromise, timeoutPromise])
     
     // Prefetch related products in the background
-    if (product.value?.category) { 
+    if (product.value?.category?.id) { 
+      const categoryId = product.value.category.id
       setTimeout(() => {
         productsStore.fetchProducts({ 
-          category: product.value?.category.id, 
+          categoryId, 
           limit: 4,
           page: 1
         })
@@ -119,16 +120,17 @@ function addToCart() {
   try {
     cartStore.addItem(product.value, selectedQuantity.value)
     
-    // Show success message (implement your preferred notification method)
-    console.log(`Added ${product.value.name} to cart`)
+    // Show success notification
+    const { cartAdded } = useToast()
+    cartAdded(product.value.name, selectedQuantity.value)
     
-    // You could implement a custom notification system here
-    // For example, using a ref to show a temporary message
+    console.log(`Added ${product.value.name} to cart`)
   } catch (err) {
     console.error('Error adding to cart:', err)
     
-    // Show error message
-    alert('Ürün sepete eklenirken bir hata oluştu')
+    // Show error notification
+    const { cartError } = useToast()
+    cartError('Ürün sepete eklenirken bir hata oluştu')
   }
 }
 
@@ -182,7 +184,7 @@ useHead(() => ({
           <NuxtLink to="/" class="hover:text-gray-900">Ana Sayfa</NuxtLink>
           <span class="mx-2">/</span>
         </li>
-        <li v-if="product" class="flex items-center">
+        <li v-if="product && product.category" class="flex items-center">
           <NuxtLink 
             :to="`/categories/${product.category.slug}`" 
             class="hover:text-gray-900"

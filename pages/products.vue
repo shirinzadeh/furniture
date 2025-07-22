@@ -129,10 +129,16 @@ const fetchProducts = async (isInitialFetch = false) => {
   error.value = null
   
   try {
-    console.log('Fetching products')
+    console.log('Fetching products for page:', currentPage.value)
     
-    // Using direct fetch for more control over error handling
-    const response = await fetch('/api/products')
+    // Build query parameters properly
+    const queryParams = new URLSearchParams()
+    queryParams.append('page', currentPage.value.toString())
+    queryParams.append('limit', itemsPerPage.toString())
+    queryParams.append('sort', selectedSort.value)
+    
+    // Using direct fetch with proper pagination parameters
+    const response = await fetch(`/api/products?${queryParams.toString()}`)
     
     // Check for non-OK responses
     if (!response.ok) {
@@ -155,26 +161,36 @@ const fetchProducts = async (isInitialFetch = false) => {
       if (isInitialFetch) {
         products.value = data.products
       } else {
-        // Only add products if we actually got any
-        if (data.products.length > 0) {
-          products.value = [...products.value, ...data.products]
+        // Only add products if we actually got any and they're different from existing ones
+        const newProducts = data.products || []
+        if (newProducts.length > 0) {
+          // Filter out any products that already exist (prevent duplicates)
+          const existingIds = new Set(products.value.map((p: Product) => p.id))
+          const uniqueNewProducts = newProducts.filter((p: Product) => !existingIds.has(p.id))
+          
+          if (uniqueNewProducts.length > 0) {
+            products.value = [...products.value, ...uniqueNewProducts]
+          }
         }
       }
       
-      // Update to use count instead of pagination
-      totalProducts.value = data.count || 0
+      // Update pagination information
+      if (data.pagination) {
+        totalProducts.value = data.pagination.total || 0
+        totalPages.value = data.pagination.totalPages || 1
+        hasMoreProducts.value = currentPage.value < totalPages.value
+      } else {
+        // Fallback: check if we got fewer products than requested
+        const loadedNewProducts = data.products.length
+        hasMoreProducts.value = loadedNewProducts >= itemsPerPage
+      }
       
-      // Check if we've reached the end based on number of products received
-      const loadedNewProducts = data.products.length
-      hasMoreProducts.value = loadedNewProducts >= itemsPerPage
-      
-      // For totalPages, calculate based on total count and items per page
-      totalPages.value = Math.ceil(totalProducts.value / itemsPerPage)
+      console.log(`Loaded ${data.products.length} products for page ${currentPage.value}. Has more: ${hasMoreProducts.value}`)
     } else {
       console.error('Invalid response format:', data)
       error.value = 'Ürünler yüklenirken bir hata oluştu.'
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error('Error fetching products:', err)
     error.value = err instanceof Error ? err.message : 'Ürünler yüklenirken bir hata oluştu.'
   } finally {

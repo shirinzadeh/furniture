@@ -1,75 +1,151 @@
-import { ref } from 'vue'
+import { reactive, readonly } from 'vue'
 
-interface Toast {
-  id: number
-  message: string
-  type: 'success' | 'error' | 'info' | 'warning'
-  duration: number
+export interface Toast {
+  id: string
+  type: 'success' | 'error' | 'warning' | 'info'
+  title: string
+  message?: string
+  duration?: number
+  actions?: Array<{
+    label: string
+    action: () => void
+    primary?: boolean
+  }>
 }
 
-// Create a reactive toast state
-const toasts = ref<Toast[]>([])
-let toastIdCounter = 0
+interface ToastState {
+  toasts: Toast[]
+}
 
-export function useToast() {
-  // Add a new toast notification
-  const showToast = ({
-    message,
-    type = 'info',
-    duration = 5000
-  }: {
-    message: string;
-    type?: Toast['type'];
-    duration?: number;
-  }) => {
-    const id = ++toastIdCounter
-    
-    const toast: Toast = {
+const state: ToastState = reactive({
+  toasts: []
+})
+
+let toastCounter = 0
+
+export const useToast = () => {
+  const generateId = () => `toast-${++toastCounter}-${Date.now()}`
+
+  const addToast = (toast: Omit<Toast, 'id'>) => {
+    const id = generateId()
+    const newToast: Toast = {
       id,
-      message,
-      type,
-      duration
+      duration: 5000, // Default 5 seconds
+      ...toast
     }
     
-    toasts.value.push(toast)
+    state.toasts.push(newToast)
     
-    // Auto remove toast after duration
-    if (duration > 0) {
+    // Auto remove after duration
+    if (newToast.duration && newToast.duration > 0) {
       setTimeout(() => {
         removeToast(id)
-      }, duration)
+      }, newToast.duration)
     }
     
     return id
   }
-  
-  // Remove a toast notification by ID
-  const removeToast = (id: number) => {
-    const index = toasts.value.findIndex(toast => toast.id === id)
-    if (index !== -1) {
-      toasts.value.splice(index, 1)
+
+  const removeToast = (id: string) => {
+    const index = state.toasts.findIndex(toast => toast.id === id)
+    if (index > -1) {
+      state.toasts.splice(index, 1)
     }
   }
-  
-  // Clear all toast notifications
-  const clearToasts = () => {
-    toasts.value = []
+
+  const clearAll = () => {
+    state.toasts.splice(0)
   }
-  
-  // Helper methods for common toast types
-  const success = (message: string, duration = 5000) => showToast({ message, type: 'success', duration })
-  const error = (message: string, duration = 5000) => showToast({ message, type: 'error', duration })
-  const info = (message: string, duration = 5000) => showToast({ message, type: 'info', duration })
-  const warning = (message: string, duration = 5000) => showToast({ message, type: 'warning', duration })
-  
+
+  // Specific toast types
+  const success = (title: string, message?: string, options?: Partial<Toast>) => {
+    return addToast({ type: 'success', title, message, ...options })
+  }
+
+  const error = (title: string, message?: string, options?: Partial<Toast>) => {
+    return addToast({ type: 'error', title, message, duration: 7000, ...options })
+  }
+
+  const warning = (title: string, message?: string, options?: Partial<Toast>) => {
+    return addToast({ type: 'warning', title, message, ...options })
+  }
+
+  const info = (title: string, message?: string, options?: Partial<Toast>) => {
+    return addToast({ type: 'info', title, message, ...options })
+  }
+
+  // Cart-specific methods
+  const cartAdded = (productName: string, quantity: number = 1) => {
+    return success(
+      'Ürün sepete eklendi!',
+      `${productName} (${quantity} adet) sepetinize eklendi.`,
+      {
+        duration: 3000,
+        actions: [
+          {
+            label: 'Sepete Git',
+            action: () => {
+              navigateTo('/cart')
+            },
+            primary: true
+          }
+        ]
+      }
+    )
+  }
+
+  const cartUpdated = (productName: string, quantity: number) => {
+    return success(
+      'Sepet güncellendi',
+      `${productName} miktarı ${quantity} olarak güncellendi.`,
+      { duration: 2000 }
+    )
+  }
+
+  const cartRemoved = (productName: string) => {
+    return info(
+      'Ürün sepetten çıkarıldı',
+      `${productName} sepetinizden kaldırıldı.`,
+      { duration: 2000 }
+    )
+  }
+
+  const cartCleared = () => {
+    return info(
+      'Sepet temizlendi',
+      'Tüm ürünler sepetinizden kaldırıldı.',
+      { duration: 2000 }
+    )
+  }
+
+  const cartError = (message: string = 'Bir hata oluştu') => {
+    return error(
+      'Sepet Hatası',
+      message,
+      { duration: 5000 }
+    )
+  }
+
   return {
-    toasts,
-    showToast,
+    // State
+    toasts: readonly(state.toasts),
+    
+    // Core methods
+    addToast,
     removeToast,
-    clearToasts,
+    clearAll,
+    
+    // Type-specific methods
     success,
     error,
+    warning,
     info,
-    warning
+    
+    // Cart-specific methods
+    cartAdded,
+    cartUpdated,
+    cartRemoved,
+    cartCleared,
+    cartError
   }
 }

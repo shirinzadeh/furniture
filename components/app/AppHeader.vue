@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useCartStore, useAuthStore } from '~/stores'
 
 const searchQuery = ref('')
 const isDropdownOpen = ref(false)
 const isMobileMenuOpen = ref(false)
 const windowWidth = ref(0)
+
+// Initialize stores
+const cartStore = useCartStore()
+const authStore = useAuthStore()
 
 const categories = [
   { name: 'Living Room', slug: 'living-room' },
@@ -119,21 +124,52 @@ onUnmounted(() => {
         </NuxtLink>
 
         <!-- User actions - simplified for mobile -->
-        <!-- <div class="flex items-center space-x-2 md:space-x-6">
-          <NuxtLink to="/account" class="text-gray-700 hover:text-amber-700 transition-colors hidden md:flex items-center">
+        <div class="flex items-center space-x-2 md:space-x-6">
+          <!-- User account link - shown when authenticated -->
+          <NuxtLink 
+            v-if="authStore.isAuthenticated" 
+            to="/account" 
+            class="text-gray-700 hover:text-amber-700 transition-colors hidden md:flex items-center"
+          >
+            <Icon name="ph:user" size="24" class="mr-1" />
+            <span class="hidden md:inline">Hesabım</span>
+          </NuxtLink>
+          
+          <!-- Login link - shown when not authenticated -->
+          <NuxtLink 
+            v-else
+            to="/login" 
+            class="text-gray-700 hover:text-amber-700 transition-colors hidden md:flex items-center"
+          >
             <Icon name="ph:user" size="24" class="mr-1" />
             <span class="hidden md:inline">Giriş Yap</span>
           </NuxtLink>
-          <NuxtLink to="/account" class="text-gray-700 hover:text-amber-700 transition-colors md:hidden">
+          
+          <!-- Mobile user icon -->
+          <NuxtLink 
+            :to="authStore.isAuthenticated ? '/account' : '/login'" 
+            class="text-gray-700 hover:text-amber-700 transition-colors md:hidden"
+          >
             <Icon name="ph:user" size="24" />
           </NuxtLink>
+          
+          <!-- Favorites link -->
           <NuxtLink to="/favorites" class="text-gray-700 hover:text-amber-700 transition-colors">
             <Icon name="ph:heart" size="24" />
           </NuxtLink>
-          <NuxtLink to="/cart" class="text-gray-700 hover:text-amber-700 transition-colors">
+          
+          <!-- Cart link with badge -->
+          <NuxtLink to="/cart" class="relative text-gray-700 hover:text-amber-700 transition-colors">
             <Icon name="ph:shopping-cart" size="24" />
+            <!-- Cart badge -->
+            <span 
+              v-if="cartStore.itemCount > 0" 
+              class="absolute -top-2 -right-2 bg-amber-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold"
+            >
+              {{ cartStore.itemCount > 99 ? '99+' : cartStore.itemCount }}
+            </span>
           </NuxtLink>
-        </div> -->
+        </div>
       </div>
     </div>
 
@@ -257,14 +293,32 @@ onUnmounted(() => {
       </div>
 
       <div class="overflow-y-auto h-full pb-20">
-        <!-- Mobile user info -->
-        <div class="p-4 border-b border-gray-100">
+        <!-- Mobile user info and cart -->
+        <div class="p-4 border-b border-gray-100 space-y-4">
           <span 
             class="flex items-center space-x-2 text-gray-700 cursor-not-allowed opacity-70"
           >
             <Icon name="ph:user" size="24" />
             <span class="font-medium">Giriş Yap / Üye Ol</span>
           </span>
+          
+          <!-- Mobile cart link -->
+          <NuxtLink 
+            to="/cart" 
+            class="flex items-center justify-between text-gray-700 hover:text-amber-700 transition-colors"
+            @click="closeMobileMenu"
+          >
+            <div class="flex items-center space-x-2">
+              <Icon name="ph:shopping-cart" size="24" />
+              <span class="font-medium">Sepetim</span>
+            </div>
+            <span 
+              v-if="cartStore.itemCount > 0" 
+              class="bg-amber-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold"
+            >
+              {{ cartStore.itemCount > 99 ? '99+' : cartStore.itemCount }}
+            </span>
+          </NuxtLink>
         </div>
 
         <!-- Mobile navigation -->

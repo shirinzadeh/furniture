@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import type { Product } from '~/types'
+import { useCartStore } from '~/stores'
+import useFavoritesStore from '~/stores/favorites'
+import useAuthStore from '~/stores/auth'
+import { useToast } from '~/composables/useToast'
 
 interface Props {
   product: Product
@@ -17,10 +21,14 @@ const props = withDefaults(defineProps<Props>(), {
   size: 'md'
 })
 
-const emit = defineEmits<{
-  addToFavorites: [productId: string]
-  addToCart: [productId: string]
-}>()
+// Initialize stores and composables
+const cartStore = useCartStore()
+const favoritesStore = useFavoritesStore()
+const { cartAdded, cartError } = useToast()
+
+// Local loading states for this specific product
+const addingToCart = ref(false)
+const togglingFavorite = ref(false)
 
 // Calculate discount percentage
 const discountPercentage = computed(() => {
@@ -35,6 +43,26 @@ const isOnSale = computed(() => {
   return props.product.salePrice && props.product.price > props.product.salePrice
 })
 
+// Get product ID safely
+const productId = computed(() => {
+  return props.product.id || props.product._id?.toString() || ''
+})
+
+// Check if product is already in cart (specific to this product)
+const isInCart = computed(() => {
+  return productId.value ? cartStore.isInCart(productId.value) : false
+})
+
+// Get current quantity in cart (specific to this product)
+const cartQuantity = computed(() => {
+  return productId.value ? cartStore.getItemQuantity(productId.value) : 0
+})
+
+// Check if product is in favorites (specific to this product)
+const isFavorite = computed(() => {
+  return productId.value ? favoritesStore.isFavorite(productId.value) : false
+})
+
 // Determine image height based on size prop
 const imageHeight = computed(() => {
   switch (props.size) {
@@ -45,27 +73,74 @@ const imageHeight = computed(() => {
 })
 
 // Handle add to favorites
-const handleAddToFavorites = (e: Event) => {
+const handleAddToFavorites = async (e: Event) => {
   e.preventDefault()
   e.stopPropagation()
-  emit('addToFavorites', props.product.id)
+  
+  if (!productId.value) {
+    console.error('Product ID is missing:', props.product)
+    const { error: toastError } = useToast()
+    toastError('Hata', 'Ürün ID\'si bulunamadı')
+    return
+  }
+  
+  // Check if user is authenticated
+  const authStore = useAuthStore()
+  if (!authStore.isAuthenticated) {
+    const { info } = useToast()
+    info('Giriş Gerekli', 'Favorilere eklemek için giriş yapmalısınız')
+    await navigateTo('/login')
+    return
+  }
+  
+  togglingFavorite.value = true
+  
+  try {
+    const newFavoriteStatus = await favoritesStore.toggleFavorite(productId.value)
+    
+    const { success, info } = useToast()
+    if (newFavoriteStatus) {
+      success('Favorilere Eklendi', `${props.product.name} favorilerinize eklendi`)
+    } else {
+      info('Favorilerden Çıkarıldı', `${props.product.name} favorilerinizden kaldırıldı`)
+    }
+  } catch (error: any) {
+    console.error('Error toggling favorite:', error)
+    const { error: toastError } = useToast()
+    toastError('Hata', 'Favori durumu değiştirilirken bir hata oluştu')
+  } finally {
+    togglingFavorite.value = false
+  }
 }
 
 // Handle add to cart
-const handleAddToCart = (e: Event) => {
+const handleAddToCart = async (e: Event) => {
   e.preventDefault()
   e.stopPropagation()
-  emit('addToCart', props.product.id)
+  
+  if (!productId.value) {
+    console.error('Product ID is missing:', props.product)
+    const { error: toastError } = useToast()
+    toastError('Hata', 'Ürün ID\'si bulunamadı')
+    return
+  }
+  
+  addingToCart.value = true
+  
+  try {
+    await cartStore.addToCart(props.product, 1)
+    cartAdded(props.product.name, 1)
+  } catch (error: any) {
+    console.error('Error adding to cart:', error)
+    cartError('Ürün sepete eklenirken bir hata oluştu')
+  } finally {
+    addingToCart.value = false
+  }
 }
 
 // Format price with Turkish locale
 const formatPrice = (price: number) => {
   return price.toLocaleString('tr-TR')
-}
-
-// Calculate discount percentage
-const calculateDiscount = (originalPrice: number, salePrice: number) => {
-  return Math.round((1 - salePrice / originalPrice) * 100)
 }
 
 // Image hover state
@@ -84,6 +159,12 @@ const handleMouseLeave = () => {
   isHovered.value = false
   currentImageIndex.value = 0
 }
+
+// Initialize favorite status when component mounts
+onMounted(async () => {
+  // Initialize stores if not already done
+  await favoritesStore.initFavorites()
+})
 </script>
 
 <template>
@@ -97,17 +178,57 @@ const handleMouseLeave = () => {
     <div class="absolute top-4 right-4 z-20 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
       <button 
         @click="handleAddToFavorites"
-        class="action-button bg-white/90 backdrop-blur-sm hover:bg-amber-50 hover:text-amber-600"
-        aria-label="Add to favorites"
+        :disabled="togglingFavorite"
+        :class="[
+          'action-button backdrop-blur-sm transition-all',
+          isFavorite 
+            ? 'bg-red-100 text-red-600 hover:bg-red-200' 
+            : 'bg-white/90 hover:bg-red-50 hover:text-red-600'
+        ]"
+        :aria-label="isFavorite ? 'Remove from favorites' : 'Add to favorites'"
       >
-        <Icon name="ph:heart" size="20" />
+        <Icon 
+          v-if="togglingFavorite" 
+          name="mdi:loading" 
+          size="20" 
+          class="animate-spin" 
+        />
+        <Icon 
+          v-else
+          :name="isFavorite ? 'ph:heart-fill' : 'ph:heart'" 
+          size="20" 
+        />
       </button>
+      
       <button 
         @click="handleAddToCart"
-        class="action-button bg-white/90 backdrop-blur-sm hover:bg-amber-50 hover:text-amber-600"
-        aria-label="Add to cart"
+        :disabled="addingToCart"
+        :class="[
+          'action-button backdrop-blur-sm transition-all',
+          isInCart 
+            ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+            : 'bg-white/90 hover:bg-amber-50 hover:text-amber-600'
+        ]"
+        :aria-label="isInCart ? `${cartQuantity} in cart` : 'Add to cart'"
       >
-        <Icon name="ph:shopping-cart" size="20" />
+        <Icon 
+          v-if="addingToCart" 
+          name="mdi:loading" 
+          size="20" 
+          class="animate-spin" 
+        />
+        <Icon 
+          v-else
+          :name="isInCart ? 'ph:check-circle-fill' : 'ph:shopping-cart'" 
+          size="20" 
+        />
+        <!-- Cart quantity badge -->
+        <span 
+          v-if="cartQuantity > 0" 
+          class="absolute -top-1 -right-1 bg-amber-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold"
+        >
+          {{ cartQuantity }}
+        </span>
       </button>
     </div>
     
@@ -183,6 +304,7 @@ const handleMouseLeave = () => {
 }
 
 .action-button {
+  position: relative;
   width: 36px;
   height: 36px;
   border-radius: 50%;

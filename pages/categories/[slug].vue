@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Product, Category } from '~/types'
+import ProductCard from '~/components/product/ProductCard.vue'
 
 const route = useRoute()
 // Cast the route params to any to avoid TypeScript errors
@@ -402,52 +403,11 @@ onMounted(fetchCategoryData)
         
         <div v-else>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-            <NuxtLink 
+            <ProductCard 
               v-for="product in products" 
               :key="product.id" 
-              :to="`/product/${product.slug}`"
-              class="product-card group"
-            >
-              <div class="relative h-56 overflow-hidden rounded-xl">
-                <NuxtImg
-                  :src="product.images[0] || '/images/placeholder.jpg'"
-                  :alt="product.name"
-                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  format="webp"
-                  quality="85"
-                  loading="lazy"
-                />
-                <div v-if="product.salePrice && product.salePrice < product.price" 
-                     class="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-md z-10">
-                  {{ Math.round((1 - product.salePrice / product.price) * 100) }}% İndirim
-                </div>
-                
-                <div class="absolute top-3 right-3 z-10">
-                  <button class="bg-white/80 backdrop-blur-sm p-2 rounded-full text-gray-700 hover:text-red-500 transition-colors">
-                    <Icon name="mdi:heart-outline" size="20" />
-                  </button>
-                </div>
-              </div>
-              
-              <div class="p-4">
-                <h3 class="text-lg font-semibold mb-2 line-clamp-2 group-hover:text-gray-900 transition-colors">{{ product.name }}</h3>
-                <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ product.description }}</p>
-                
-                <div class="flex items-center justify-between mt-4">
-                  <div>
-                    <span v-if="product.salePrice" class="text-red-500 font-bold">{{ product.salePrice.toLocaleString('tr-TR') }} TL</span>
-                    <span v-if="product.salePrice" class="text-gray-400 line-through ml-2 text-sm">{{ product.price.toLocaleString('tr-TR') }} TL</span>
-                    <span v-else class="text-gray-800 font-bold">{{ product.price.toLocaleString('tr-TR') }} TL</span>
-                  </div>
-                  <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                      <Icon name="mdi:eye-outline" size="14" class="inline-block mr-1" />
-                      İncele
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </NuxtLink>
+              :product="product" 
+            />
           </div>
           
           <!-- Pagination -->

@@ -19,7 +19,7 @@ const useAuthStore = defineStore('auth', {
   }),
   
   getters: {
-    isAuthenticated: (state) => !!state.token,
+    isAuthenticated: (state) => !!state.token && !!state.user,
     isAdmin: (state) => state.user?.role === 'admin'
   },
   
@@ -27,7 +27,6 @@ const useAuthStore = defineStore('auth', {
     async init() {
       // Check for existing token in cookies
       const token = useCookie('auth_token').value
-      console.log('token', token)
       
       if (token) {
         this.token = token
@@ -36,7 +35,6 @@ const useAuthStore = defineStore('auth', {
     },
     
     async login(email: string, password: string) {
-      console.log('login', email, password)
       this.loading = true
       this.error = null
       
@@ -46,8 +44,6 @@ const useAuthStore = defineStore('auth', {
           method: 'POST',
           body: { email, password }
         })
-
-        console.log('response', response)
         
         this.user = response.user
         this.token = response.token
@@ -57,11 +53,10 @@ const useAuthStore = defineStore('auth', {
           maxAge: 60 * 60 * 24 * 7, // 7 days
           path: '/' 
         })
-
-        console.log('authCookie', authCookie)
         authCookie.value = response.token
-        console.log('authCookie.value', authCookie.value)
-        console.log('response.token', response.token)
+        
+        // Initialize cart and favorites after successful login
+        await this.onLoginSuccess()
         
         return true
       } catch (error: any) {
@@ -93,6 +88,9 @@ const useAuthStore = defineStore('auth', {
         })
         authCookie.value = response.token
         
+        // Initialize cart and favorites after successful registration
+        await this.onLoginSuccess()
+        
         return true
       } catch (error: any) {
         this.error = error.message || 'Registration failed'
@@ -112,6 +110,12 @@ const useAuthStore = defineStore('auth', {
         const user = await api.fetchRaw<User>('/api/auth/profile')
         
         this.user = user
+        
+        // Initialize cart and favorites if user is authenticated
+        if (this.isAuthenticated) {
+          await this.onLoginSuccess()
+        }
+        
         return true
       } catch (error: any) {
         // If unauthorized, logout
@@ -124,13 +128,38 @@ const useAuthStore = defineStore('auth', {
       }
     },
     
+    // Called when user successfully logs in or registers
+    async onLoginSuccess() {
+      try {
+        // Dynamically import stores to avoid circular dependencies
+        const { useCartStore } = await import('~/stores')
+        const useFavoritesStore = (await import('~/stores/favorites')).default
+        
+        const cartStore = useCartStore()
+        const favoritesStore = useFavoritesStore()
+        
+        // Initialize stores with database data
+        await Promise.all([
+          cartStore.onUserLogin(),
+          favoritesStore.onUserLogin()
+        ])
+      } catch (error) {
+        console.error('Error initializing stores after login:', error)
+      }
+    },
+    
     logout(redirect = true) {
+      // Clear user data
       this.user = null
       this.token = null
+      this.error = null
       
       // Remove cookie
       const authCookie = useCookie('auth_token')
       authCookie.value = null
+      
+      // Clear stores
+      this.onLogoutSuccess()
       
       // Redirect to login if on authenticated page and redirect is true
       if (redirect) {
@@ -138,6 +167,25 @@ const useAuthStore = defineStore('auth', {
         if (route.meta.requiresAuth) {
           navigateTo('/login')
         }
+      }
+    },
+    
+    // Called when user logs out
+    onLogoutSuccess() {
+      try {
+        // Dynamically import stores to avoid circular dependencies
+        import('~/stores').then(({ useCartStore }) => {
+          const cartStore = useCartStore()
+          cartStore.onUserLogout()
+        })
+        
+        import('~/stores/favorites').then((module) => {
+          const useFavoritesStore = module.default
+          const favoritesStore = useFavoritesStore()
+          favoritesStore.onUserLogout()
+        })
+      } catch (error) {
+        console.error('Error clearing stores after logout:', error)
       }
     }
   }
