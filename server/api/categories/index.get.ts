@@ -1,9 +1,26 @@
 import { defineEventHandler, getQuery, createError } from 'h3'
 import { CategoryModel } from '~/server/models/Category'
 import { ProductModel } from '~/server/models/Product'
+import mongoose from 'mongoose'
+
+// Ensure database connection
+const ensureDBConnection = async () => {
+  if (mongoose.connection.readyState !== 1) {
+    const config = useRuntimeConfig()
+    await mongoose.connect(config.mongodbUri, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      bufferCommands: false
+    })
+  }
+}
 
 export default defineEventHandler(async (event) => {
   try {
+    // Ensure database connection
+    await ensureDBConnection()
+    
     const query = getQuery(event)
     
     // Parse query parameters

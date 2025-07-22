@@ -7,25 +7,17 @@ export default defineNuxtConfig({
     '@nuxt/icon',
     '@nuxtjs/tailwindcss',
     'nuxt-swiper',
-    '@pinia/nuxt',
-    'nuxt-mongoose'
+    '@pinia/nuxt'
   ],
-  mongoose: {
-    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/furniture',
-    options: {
-      connectTimeoutMS: 30000, // Increase timeout to 30 seconds
-      socketTimeoutMS: 30000,  // Socket timeout
-      serverSelectionTimeoutMS: 30000,
-      maxPoolSize: 20,         // Increased connection pool size
-      minPoolSize: 5,          // Keep minimum connections ready
-      maxIdleTimeMS: 60000     // Close idle connections after 1 minute
-    }
-  },
   runtimeConfig: {
-    jwtSecret: process.env.JWT_SECRET,
+    mongodbUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/furniture',
+    jwtSecret: process.env.JWT_SECRET || 'your-fallback-secret-key',
     apiURL: process.env.API_URL,
     public: {
       apiURL: process.env.API_URL
     }
+  },
+  nitro: {
+    plugins: ['~/server/plugins/mongodb.ts']
   }
 })
