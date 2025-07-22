@@ -105,11 +105,13 @@ export default defineEventHandler(async (event) => {
     
     return {
       products,
+      count: total, // Add this field that frontend expects
       pagination: {
         page,
         limit,
         totalItems: total,
-        totalPages
+        totalPages,
+        total // Also include in pagination for compatibility
       }
     }
   } catch (error: any) {

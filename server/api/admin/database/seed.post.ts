@@ -7,11 +7,11 @@ import { UserModel } from '~/server/models/User'
 
 // Sample seed data
 const categories = [
-  { name: 'Living Room', slug: 'living-room', image: '/images/categories/living-room.jpg', featured: true },
-  { name: 'Bedroom', slug: 'bedroom', image: '/images/categories/bedroom.jpg', featured: true },
-  { name: 'Dining Room', slug: 'dining-room', image: '/images/categories/dining-room.jpg', featured: true },
-  { name: 'Office', slug: 'office', image: '/images/categories/office.jpg', featured: true },
-  { name: 'Kids & Youth', slug: 'kids-youth', image: '/images/categories/kids-youth.jpg', featured: true },
+  { name: 'Living Room', slug: 'living-room', image: '/images/categories/living-room.webp', featured: true },
+  { name: 'Bedroom', slug: 'bedroom', image: '/images/categories/bedroom.webp', featured: true },
+  { name: 'Dining Room', slug: 'dining-room', image: '/images/categories/dining-room.jpeg', featured: true },
+  { name: 'Office', slug: 'office', image: '/images/categories/office.webp', featured: true },
+  { name: 'Kids & Youth', slug: 'kids-youth', image: '/images/categories/kids-youth.jpeg', featured: true },
   { name: 'Wardrobe & Entryway', slug: 'wardrobe-entryway', image: '/images/categories/wardrobe-entryway.jpg', featured: false }
 ]
 
@@ -26,9 +26,7 @@ const products = [
     stock: 10,
     description: 'A comfortable modern sofa with clean lines and durable fabric upholstery. Perfect for contemporary living spaces.',
     images: [
-      '/images/products/modern-sofa-1.jpg',
-      '/images/products/modern-sofa-2.jpg',
-      '/images/products/modern-sofa-3.jpg'
+      '/images/products/modern-sofa.webp',
     ],
     featured: true,
     categorySlug: 'living-room'
@@ -42,8 +40,7 @@ const products = [
     stock: 15,
     description: 'Stylish coffee table with storage shelf, perfect centerpiece for your living room.',
     images: [
-      '/images/products/coffee-table-1.jpg',
-      '/images/products/coffee-table-2.jpg'
+      '/images/products/coffee-table.jpg',
     ],
     featured: false,
     categorySlug: 'living-room'
@@ -59,8 +56,7 @@ const products = [
     stock: 8,
     description: 'A stylish queen platform bed with a tufted headboard and wooden slats. No box spring required.',
     images: [
-      '/images/products/platform-bed-1.jpg',
-      '/images/products/platform-bed-2.jpg'
+      '/images/products/queen-platform-bed.jpg',
     ],
     featured: true,
     categorySlug: 'bedroom'
@@ -74,8 +70,7 @@ const products = [
     stock: 12,
     description: 'Elegant dresser with attached mirror, featuring six spacious drawers for storage.',
     images: [
-      '/images/products/dresser-1.jpg',
-      '/images/products/dresser-2.jpg'
+      '/images/products/dresser-with-mirror.jpg',
     ],
     featured: false,
     categorySlug: 'bedroom'
@@ -91,8 +86,7 @@ const products = [
     stock: 5,
     description: 'A modern dining table set with 6 chairs, perfect for family gatherings and dinner parties.',
     images: [
-      '/images/products/dining-set-1.jpg',
-      '/images/products/dining-set-2.jpg'
+      '/images/products/dining-table-set.jpg',
     ],
     featured: true,
     categorySlug: 'dining-room'
@@ -106,8 +100,7 @@ const products = [
     stock: 7,
     description: 'Beautiful china cabinet with glass doors to display your finest dinnerware.',
     images: [
-      '/images/products/china-cabinet-1.jpg',
-      '/images/products/china-cabinet-2.jpg'
+      '/images/products/china-cabinet.webp',
     ],
     featured: false,
     categorySlug: 'dining-room'
@@ -123,8 +116,7 @@ const products = [
     stock: 10,
     description: 'A spacious executive desk with plenty of storage and a sleek modern design.',
     images: [
-      '/images/products/office-desk-1.jpg',
-      '/images/products/office-desk-2.jpg'
+      '/images/products/executive-office-desk.jpg',
     ],
     featured: true,
     categorySlug: 'office'
@@ -138,8 +130,8 @@ const products = [
     stock: 20,
     description: 'Comfortable ergonomic chair with adjustable height and lumbar support for long work sessions.',
     images: [
-      '/images/products/office-chair-1.jpg',
-      '/images/products/office-chair-2.jpg'
+      '/images/products/ergonomic-office-chair.webp',
+      '/images/products/ergonomic-office-chair-2.webp'
     ],
     featured: false,
     categorySlug: 'office'
@@ -155,8 +147,8 @@ const products = [
     stock: 8,
     description: 'Space-saving bunk bed for kids, featuring a built-in ladder and safety rails.',
     images: [
-      '/images/products/bunk-bed-1.jpg',
-      '/images/products/bunk-bed-2.jpg'
+      '/images/products/bunk-bed.webp',
+      '/images/products/bunk-bed-2.webp'
     ],
     featured: true,
     categorySlug: 'kids-youth'
@@ -170,8 +162,7 @@ const products = [
     stock: 15,
     description: 'Colorful study desk with shelves and drawers, perfect for homework and creative projects.',
     images: [
-      '/images/products/kids-desk-1.jpg',
-      '/images/products/kids-desk-2.jpg'
+      '/images/products/kids-study-desk.jpg',
     ],
     featured: false,
     categorySlug: 'kids-youth'
@@ -187,8 +178,8 @@ const products = [
     stock: 12,
     description: 'Practical entryway bench with shoe storage and coat hooks to keep your entrance organized.',
     images: [
-      '/images/products/entryway-bench-1.jpg',
-      '/images/products/entryway-bench-2.jpg'
+      '/images/products/entryway-bench.webp',
+      '/images/products/entryway-bench-2.webp'
     ],
     featured: true,
     categorySlug: 'wardrobe-entryway'
@@ -199,11 +190,10 @@ const products = [
     price: 449.99,
     salePrice: null,
     inStock: true,
-    stock: 7,
-    description: 'Spacious wardrobe cabinet with hanging rod and shelves for all your clothing storage needs.',
+    stock: 10,
+    description: 'Spacious wardrobe with hanging space and shelves for organized clothing storage.',
     images: [
-      '/images/products/wardrobe-1.jpg',
-      '/images/products/wardrobe-2.jpg'
+      '/images/products/wardrobe-cabinet.jpg',
     ],
     featured: false,
     categorySlug: 'wardrobe-entryway'
@@ -219,8 +209,8 @@ const products = [
     stock: 10,
     description: 'Stylish accent chair with velvet upholstery, perfect for adding a pop of color to any room.',
     images: [
-      '/images/products/accent-chair-1.jpg',
-      '/images/products/accent-chair-2.jpg'
+      '/images/products/accent-chair.webp',
+      '/images/products/accent-chair-2.webp'
     ],
     featured: true,
     categorySlug: 'living-room'
@@ -234,8 +224,7 @@ const products = [
     stock: 8,
     description: 'Modern media console with cable management and storage for all your entertainment needs.',
     images: [
-      '/images/products/media-console-1.jpg',
-      '/images/products/media-console-2.jpg'
+      '/images/products/media-console.jpg',
     ],
     featured: true,
     categorySlug: 'living-room'
@@ -244,18 +233,10 @@ const products = [
 
 const banners = [
   {
-    title: 'Winter Flash Sale',
-    subtitle: 'Up to 40% off on selected items',
-    image: '/images/banners/winter-flash-sale.jpg',
-    link: '/flash-sale',
-    active: true,
-    order: 1
-  },
-  {
     title: 'New Collection',
     subtitle: 'Check out our latest furniture collection',
     image: '/images/banners/banner-1.jpg',
-    link: '/new-arrivals',
+    link: '/new-arrivals',  
     active: true,
     order: 2
   },
@@ -310,11 +291,26 @@ export default defineEventHandler(async (event) => {
       // Don't delete admin users by default
     }
     
-    // Seed categories
-    await CategoryModel.insertMany(categories)
+    // Seed categories first
+    const createdCategories = await CategoryModel.insertMany(categories)
     
-    // Seed products
-    await ProductModel.insertMany(products)
+    // Create a mapping from category slug to category ID
+    const categoryMap = new Map()
+    createdCategories.forEach(category => {
+      categoryMap.set(category.slug, category._id.toString())
+    })
+    
+    // Transform products to use categoryId instead of categorySlug
+    const productsWithCategoryId = products.map(product => {
+      const { categorySlug, ...productData } = product
+      return {
+        ...productData,
+        categoryId: categoryMap.get(categorySlug)
+      }
+    })
+    
+    // Seed products with proper categoryId
+    await ProductModel.insertMany(productsWithCategoryId)
     
     // Seed banners
     await BannerModel.insertMany(banners)
@@ -339,11 +335,10 @@ export default defineEventHandler(async (event) => {
       adminCreated
     }
   } catch (error: any) {
-    console.error('Database seeding error:', error)
+    console.error('Seeding error:', error)
     throw createError({
       statusCode: 500,
-      statusMessage: 'Failed to seed database',
-      message: error.message
+      message: error.message || 'Failed to seed database'
     })
   }
 }) 

@@ -1,5 +1,6 @@
 import { defineEventHandler, getQuery, createError } from 'h3'
 import { CategoryModel } from '~/server/models/Category'
+import { ProductModel } from '~/server/models/Product'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -36,13 +37,38 @@ export default defineEventHandler(async (event) => {
     const total = await CategoryModel.countDocuments(filter)
     
     // Get categories with pagination and sorting
-    const categories = await CategoryModel.find(filter)
+    let categories = await CategoryModel.find(filter)
       .sort(sort)
       .skip(skip)
       .limit(limit)
-      // Always include product count for admin view
-      .populate('_count.products')
+      .lean()
     
+    // Get product counts for all categories in a single query for better performance
+    const productCounts = await ProductModel.aggregate([
+      {
+        $group: {
+          _id: '$categoryId',
+          count: { $sum: 1 }
+        }
+      }
+    ])
+    
+    // Create a map for quick lookup
+    const countMap = new Map()
+    productCounts.forEach(item => {
+      if (item._id) {
+        countMap.set(item._id.toString(), item.count)
+      }
+    })
+    
+    // Add _count object to each category
+    categories = categories.map(category => ({
+      ...category,
+      _count: {
+        products: countMap.get(category._id.toString()) || 0
+      }
+    }))
+
     return {
       categories,
       pagination: {

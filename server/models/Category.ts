@@ -22,8 +22,8 @@ const categorySchema = new mongoose.Schema<Category>(
   }
 )
 
-// Virtual for product count
-categorySchema.virtual('_count.products', {
+// Virtual for product count - using correct syntax
+categorySchema.virtual('productCount', {
   ref: 'Product',
   localField: '_id',
   foreignField: 'categoryId',

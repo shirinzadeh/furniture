@@ -164,7 +164,7 @@ const fetchProductsData = async () => {
           inStock: true,
           featured: false,
           slug: `ornek-urun-${index + 1}`,
-          categoryId: fallbackCategory.id,
+          categoryId: fallbackCategory.id || 'fallback-category',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           category: fallbackCategory
@@ -190,7 +190,7 @@ const fetchProductsData = async () => {
       
       if (productsData.value) {
         products.value = productsData.value.products || []
-        totalPages.value = productsData.value.pagination?.pages || 1
+        totalPages.value = productsData.value.pagination?.totalPages || 1
         totalProducts.value = productsData.value.pagination?.total || 0
       } else {
         // No data but no error
@@ -237,7 +237,7 @@ const fetchProductsData = async () => {
           inStock: true,
           featured: false,
           slug: `ornek-urun-${index + 1}`,
-          categoryId: fallbackCategory.id,
+          categoryId: fallbackCategory.id || 'fallback-category',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           category: fallbackCategory

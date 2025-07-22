@@ -117,7 +117,7 @@ const handleMouseLeave = () => {
         <NuxtImg
           :src="product.images[currentImageIndex] || '/images/placeholder.jpg'"
           :alt="product.name"
-          class="w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-105"
+          class="w-full h-full max-h-[296px] object-cover transition-all duration-700 ease-out group-hover:scale-105"
           format="webp"
           quality="85"
           loading="lazy"

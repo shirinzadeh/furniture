@@ -1,5 +1,6 @@
 import { defineEventHandler, createError } from 'h3'
 import { CategoryModel } from '~/server/models/Category'
+import { ProductModel } from '~/server/models/Product'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -12,8 +13,8 @@ export default defineEventHandler(async (event) => {
       })
     }
     
-    // Find category by slug
-    const category = await CategoryModel.findOne({ slug }).populate('_count.products')
+    // Find category by slug (without lean to get proper model transformation)
+    const category = await CategoryModel.findOne({ slug })
     
     if (!category) {
       throw createError({
@@ -22,7 +23,16 @@ export default defineEventHandler(async (event) => {
       })
     }
     
-    return category
+    // Get product count using the string version of category ID
+    const productCount = await ProductModel.countDocuments({ categoryId: category._id.toString() })
+    
+    // Convert to plain object and add product count
+    const categoryData = category.toJSON()
+    categoryData._count = {
+      products: productCount
+    }
+    
+    return categoryData
   } catch (error: any) {
     throw createError({
       statusCode: error.statusCode || 500,
