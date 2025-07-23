@@ -45,7 +45,7 @@ const fetchBestSellerProducts = async () => {
         retryCount.value++
         console.log(`No best seller products found, retrying (${retryCount.value}/${maxRetries})`)
         // Clear cache before retrying
-        productsStore.clearCache(`bestseller-products-${itemsPerPage}`)
+        productsStore.clearCache()
         setTimeout(() => fetchBestSellerProducts(), 1000) // Wait 1 second before retrying
         return
       }
@@ -59,7 +59,7 @@ const fetchBestSellerProducts = async () => {
       retryCount.value++
       console.log(`Error fetching best seller products, retrying (${retryCount.value}/${maxRetries})`)
       // Clear cache before retrying
-      productsStore.clearCache(`bestseller-products-${itemsPerPage}`)
+      productsStore.clearCache()
       setTimeout(() => fetchBestSellerProducts(), 1000) // Wait 1 second before retrying
       return
     }

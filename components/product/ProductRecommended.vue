@@ -86,7 +86,7 @@ const fetchRecommendedProducts = async () => {
   
   try {
     // Use the dedicated method for fetching recommended products
-    const response = await productsStore.fetchRecommendedProducts(10)
+    const response = await productsStore.fetchRecommendedProducts('10')
     
     if (response) {
       // Use the recommendedProducts from the store
@@ -95,23 +95,20 @@ const fetchRecommendedProducts = async () => {
       // If no products found but we have retries left, try again
       if (recommendedProducts.value.length === 0 && retryCount.value < maxRetries) {
         retryCount.value++
-        console.log(`No recommended products found, retrying (${retryCount.value}/${maxRetries})`)
         // Clear cache before retrying
-        productsStore.clearCache(`recommended-products-10`)
+        productsStore.clearCache()
         setTimeout(() => fetchRecommendedProducts(), 1000) // Wait 1 second before retrying
         return
       }
     }
   } catch (err) {
     error.value = 'Önerilen ürünler yüklenirken bir hata oluştu.'
-    console.error('Error fetching recommended products:', err)
     
     // Retry on error if we have retries left
     if (retryCount.value < maxRetries) {
       retryCount.value++
-      console.log(`Error fetching recommended products, retrying (${retryCount.value}/${maxRetries})`)
       // Clear cache before retrying
-      productsStore.clearCache(`recommended-products-10`)
+      productsStore.clearCache()
       setTimeout(() => fetchRecommendedProducts(), 1000) // Wait 1 second before retrying
       return
     }

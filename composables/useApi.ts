@@ -91,10 +91,10 @@ export function useApi() {
           
           // Show toast notification
           const toast = useToast()
-          toast.showToast({
-            message: 'Your session has expired. Please log in again.',
-            type: 'info'
-          })
+          toast.info(
+            'Oturum Süresi Doldu', 
+            'Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.'
+          )
         } catch (e) {
           console.error('Error handling unauthorized access:', e)
         }

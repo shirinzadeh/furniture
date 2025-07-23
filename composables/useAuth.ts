@@ -123,7 +123,6 @@ export function useAuth() {
       })
       
       if (!response || !response.user) {
-        console.error('Auth: Invalid response from login API', response)
         error.value = 'Invalid response from server'
         return null
       }
@@ -132,11 +131,9 @@ export function useAuth() {
       currentUser.value = response.user
       authState.initialized = true
       
-      console.log('Login successful, user data:', currentUser.value)
       
       return currentUser.value
     } catch (err: any) {
-      console.error('Auth: Login error', err)
       error.value = err.data?.message || 'Invalid email or password'
       return null
     } finally {

@@ -60,32 +60,26 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    console.log('Found product:', product.name)
-    console.log('Product object:', { id: product.id, _id: product._id, hasId: !!product.id, hasObjectId: !!product._id })
 
     // Find or create user's cart
     let cart = await CartModel.findOne({ userId: payload.userId })
     
     if (!cart) {
-      console.log('Creating new cart for user:', payload.userId)
       cart = await CartModel.create({
         userId: payload.userId,
         items: []
       })
     }
 
-    console.log('Current cart items:', cart.items.length)
 
     // Check if item already exists in cart
     const existingItemIndex = cart.items.findIndex(item => item.productId === productId)
 
     if (existingItemIndex >= 0) {
       // Update quantity of existing item
-      console.log('Updating existing item quantity')
       cart.items[existingItemIndex].quantity += quantity
     } else {
       // Add new item to cart
-      console.log('Adding new item to cart')
       cart.items.push({
         productId: product.id || product._id.toString(),
         name: product.name,
@@ -98,10 +92,8 @@ export default defineEventHandler(async (event) => {
     }
 
     // Save cart
-    console.log('Saving cart with items:', cart.items.length)
     await cart.save()
     
-    console.log('Cart saved successfully')
 
     return {
       success: true,

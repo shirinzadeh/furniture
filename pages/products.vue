@@ -26,6 +26,7 @@ const apiState = useApiState()
 const products = ref<Product[]>([])
 const isLoading = computed(() => apiState.isLoading.value)
 const isLoadingMore = ref(false)
+const showLoadingIndicator = ref(false)
 const error = ref<string | null>(null)
 const observerRef = ref<HTMLElement | null>(null)
 
@@ -36,11 +37,13 @@ const totalPages = ref(1)
 const totalProducts = ref(0)
 const hasMoreProducts = ref(true)
 
-// Sort options - simplified to just essentials
+// Sort options - including name sorting
 const sortOptions = [
   { label: 'En Yeniler', value: 'newest' },
   { label: 'Fiyat (Artan)', value: 'price_asc' },
   { label: 'Fiyat (Azalan)', value: 'price_desc' },
+  { label: 'İsim (A-Z)', value: 'name_asc' },
+  { label: 'İsim (Z-A)', value: 'name_desc' },
 ]
 const selectedSort = ref('newest')
 
@@ -118,18 +121,24 @@ try {
 }
 
 // Improved fetch products function with better error handling
-const fetchProducts = async (isInitialFetch = false) => {
-  if (isInitialFetch) {
+const fetchProducts = async (isLoadMore = false) => {
+  if (isLoadMore) {
+    isLoadingMore.value = true
+    // Show loading indicator after a small delay to prevent flash
+    setTimeout(() => {
+      if (isLoadingMore.value) {
+        showLoadingIndicator.value = true
+      }
+    }, 200)
+  } else {
     currentPage.value = 1 
     products.value = [] 
-  } else {
-    isLoadingMore.value = true
   }
   
   error.value = null
   
   try {
-    console.log('Fetching products for page:', currentPage.value)
+// Fetching products silently
     
     // Build query parameters properly
     const queryParams = new URLSearchParams()
@@ -137,66 +146,48 @@ const fetchProducts = async (isInitialFetch = false) => {
     queryParams.append('limit', itemsPerPage.toString())
     queryParams.append('sort', selectedSort.value)
     
-    // Using direct fetch with proper pagination parameters
-    const response = await fetch(`/api/products?${queryParams.toString()}`)
+    // Use useApi for consistent API calls
+    const api = useApi()
+    const response = await api.fetchRaw(`/api/products?${queryParams.toString()}`)
     
-    // Check for non-OK responses
-    if (!response.ok) {
-      throw new Error(`API returned ${response.status} ${response.statusText}`)
-    }
-    
-    // Check content type
-    const contentType = response.headers.get('content-type')
-    if (!contentType || !contentType.includes('application/json')) {
-      // Try to get text to see what was returned
-      const text = await response.text()
-      console.error('Received non-JSON response:', text.substring(0, 100) + '...')
-      throw new Error('Server returned HTML instead of JSON data')
-    }
-    
-    // Parse JSON
-    const data = await response.json()
-    
-    if (data && Array.isArray(data.products)) {
-      if (isInitialFetch) {
-        products.value = data.products
-      } else {
-        // Only add products if we actually got any and they're different from existing ones
-        const newProducts = data.products || []
-        if (newProducts.length > 0) {
-          // Filter out any products that already exist (prevent duplicates)
-          const existingIds = new Set(products.value.map((p: Product) => p.id))
-          const uniqueNewProducts = newProducts.filter((p: Product) => !existingIds.has(p.id))
-          
-          if (uniqueNewProducts.length > 0) {
-            products.value = [...products.value, ...uniqueNewProducts]
-          }
+    if (response && Array.isArray(response.products)) {
+      const newProducts = response.products || []
+      
+      if (isLoadMore) {
+        // Force reactivity update by creating new array reference
+        // Try both id and _id fields since MongoDB uses _id
+        const existingIds = new Set(products.value.map((p: Product) => p.id || p._id))
+        const uniqueNewProducts = newProducts.filter((p: Product) => {
+          const productId = p.id || p._id
+          return !existingIds.has(productId)
+        })
+        
+        if (uniqueNewProducts.length > 0) {
+          products.value = [...products.value, ...uniqueNewProducts]
         }
+      } else {
+        products.value = [...newProducts]
       }
       
       // Update pagination information
-      if (data.pagination) {
-        totalProducts.value = data.pagination.total || 0
-        totalPages.value = data.pagination.totalPages || 1
+      if (response.pagination) {
+        totalProducts.value = response.pagination.totalItems || response.pagination.total || 0
+        totalPages.value = response.pagination.totalPages || 1
         hasMoreProducts.value = currentPage.value < totalPages.value
       } else {
         // Fallback: check if we got fewer products than requested
-        const loadedNewProducts = data.products.length
-        hasMoreProducts.value = loadedNewProducts >= itemsPerPage
+        hasMoreProducts.value = newProducts.length >= itemsPerPage
       }
-      
-      console.log(`Loaded ${data.products.length} products for page ${currentPage.value}. Has more: ${hasMoreProducts.value}`)
     } else {
-      console.error('Invalid response format:', data)
+      console.error('Invalid response format:', response)
       error.value = 'Ürünler yüklenirken bir hata oluştu.'
     }
   } catch (err: any) {
     console.error('Error fetching products:', err)
     error.value = err instanceof Error ? err.message : 'Ürünler yüklenirken bir hata oluştu.'
   } finally {
-    if (!isInitialFetch) {
-      isLoadingMore.value = false
-    }
+    isLoadingMore.value = false
+    showLoadingIndicator.value = false
   }
 }
 
@@ -213,23 +204,21 @@ const setupInfiniteScroll = () => {
   // Wait for next tick to ensure the observer element is in the DOM
   nextTick(() => {
     if (!observerRef.value) {
-      console.error('Observer element not found in DOM');
       return;
     }
     
     observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && hasMoreProducts.value && !isLoadingMore.value && !isLoading.value) {
-        console.log('Loading more products, incrementing to page:', currentPage.value + 1);
+      const entry = entries[0]
+      if (entry.isIntersecting && hasMoreProducts.value && !isLoadingMore.value && !isLoading.value && products.value.length > 0) {
         currentPage.value++
-        fetchProducts(false)
+        fetchProducts(true)
       }
     }, {
-      rootMargin: '200px', // Trigger before user reaches bottom
+      rootMargin: '100px', // Reduced trigger distance
       threshold: 0.1
     })
     
     observer.observe(observerRef.value)
-    console.log('Infinite scroll observer setup complete');
   })
 }
 
@@ -242,10 +231,24 @@ function changeSort(sort: string) {
 }
 
 // Reset pagination and fetch new products
-const resetAndFetch = () => {
+const resetAndFetch = async () => {
+  // Clean up observer first
+  if (observer) {
+    observer.disconnect()
+    observer = null
+  }
+  
   products.value = []
   currentPage.value = 1
-  fetchProducts(true)
+  hasMoreProducts.value = true
+  
+  await fetchProducts(false)
+  
+  // Re-setup infinite scroll after new data is loaded
+  await nextTick()
+  setTimeout(() => {
+    setupInfiniteScroll()
+  }, 100)
 }
 
 // Format price with Turkish locale
@@ -259,16 +262,19 @@ const calculateDiscount = (originalPrice: number, salePrice: number) => {
 }
 
 // Set up observers and initial fetch
-onMounted(() => {
+onMounted(async () => {
   // If products were not loaded in SSR, fetch them now
   if (products.value.length === 0) {
-    fetchProducts(true)
+    await fetchProducts(false)
   }
   
-  // Setup infinite scroll after initial data is loaded
-  nextTick(() => {
+  // Setup infinite scroll after initial data is loaded and DOM is ready
+  await nextTick()
+  
+  // Small delay to ensure everything is properly rendered
+  setTimeout(() => {
     setupInfiniteScroll()
-  })
+  }, 100)
 })
 
 // Clean up observers
@@ -292,16 +298,17 @@ onBeforeRouteLeave(() => {
 })
 
 // Watch for filter/sort changes to reset pagination and refetch
-watch([selectedSort], () => {
-  resetAndFetch()
+watch([selectedSort], async () => {
+  await resetAndFetch()
 })
 
 // Re-setup infinite scroll when loading states change
-watch([isLoading], () => {
-  if (!isLoading.value) {
-    nextTick(() => {
+watch([isLoading], async () => {
+  if (!isLoading.value && products.value.length > 0) {
+    await nextTick()
+    setTimeout(() => {
       setupInfiniteScroll()
-    })
+    }, 100)
   }
 })
 </script>
@@ -370,25 +377,30 @@ watch([isLoading], () => {
       
       <!-- Products Grid -->
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-16">
-        <ProductCard 
-          v-for="product in products" 
-          :key="product.id" 
-          :product="product" 
-        />
+        <TransitionGroup name="product-appear" appear>
+          <ProductCard 
+            v-for="(product, index) in products" 
+            :key="product.id || product._id?.toString() || `product-${index}`" 
+            :product="product" 
+            class="product-item"
+          />
+        </TransitionGroup>
       </div>
       
-      <!-- Loading more indicator -->
-      <div v-if="isLoadingMore" class="flex justify-center py-8">
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 border-t-2 border-r-2 border-amber-700 rounded-full animate-spin"></div>
-          <span class="text-gray-600 font-medium">Daha fazla ürün yükleniyor...</span>
+      <!-- Loading more indicator with transition -->
+      <Transition name="fade">
+        <div v-if="isLoadingMore && showLoadingIndicator" class="flex justify-center py-8">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 border-t-2 border-r-2 border-amber-700 rounded-full animate-spin"></div>
+            <span class="text-gray-600 font-medium">Daha fazla ürün yükleniyor...</span>
+          </div>
         </div>
-      </div>
+      </Transition>
       
       <!-- End of results message -->
       <div v-if="!hasMoreProducts && products.length > 0 && !isLoadingMore" 
         class="text-center text-gray-500 py-8 font-medium">
-        Tüm ürünler gösteriliyor
+        Tüm ürünler gösteriliyor ({{ totalProducts }} ürün)
       </div>
       
       <!-- Intersection observer element -->
@@ -409,16 +421,33 @@ watch([isLoading], () => {
   background-color: var(--color-warm-white);
 }
 
-/* Smooth fade in for products */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Smooth transitions for loading and products */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
 }
 
-.grid > a {
-  animation: fadeIn 0.5s ease forwards;
-  animation-delay: calc(var(--animation-order, 0) * 0.1s);
+.fade-enter-from, .fade-leave-to {
   opacity: 0;
+}
+
+/* Product appear animations */
+.product-appear-enter-active {
+  transition: all 0.4s ease;
+  transition-delay: calc(var(--stagger-delay, 0) * 0.05s);
+}
+
+.product-appear-enter-from {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+}
+
+.product-item {
+  --stagger-delay: 0;
+}
+
+/* Stagger animation for new products */
+.product-item:nth-child(n+13) {
+  --stagger-delay: calc(var(--index, 0) * 1);
 }
 
 /* Typography enhancements */

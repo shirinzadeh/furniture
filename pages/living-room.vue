@@ -60,7 +60,7 @@ watch(() => route.fullPath, () => {
 // Server-side data fetching with apiAsyncData to prevent duplicate fetches
 const { data: initialCategoryData } = await api.asyncData(
   'living-room-category',
-  () => api.fetchRaw('/categories/by-slug/living-room'),
+  () => api.fetchRaw('/api/categories/living-room'),
   { 
     server: true,
     key: 'living-room-category-data'
@@ -68,20 +68,22 @@ const { data: initialCategoryData } = await api.asyncData(
 )
 
 // Set categoryId from SSR data if available
-if (initialCategoryData.value?.category?.id) {
-  categoryId.value = initialCategoryData.value.category.id
+if (initialCategoryData.value?._id) {
+  categoryId.value = initialCategoryData.value._id
   
   // Fetch initial products with the category ID
   const { data: initialProductsData } = await api.asyncData(
     'living-room-products',
-    () => api.fetchRaw('/products', {
-      params: {
-        category: categoryId.value,
-        page: 1,
-        limit: itemsPerPage,
-        skip: 0
+    () => {
+      const queryParams = new URLSearchParams({
+        page: '1',
+        limit: itemsPerPage.toString()
+      });
+      if (categoryId.value) {
+        queryParams.append('categoryId', categoryId.value);
       }
-    }),
+      return api.fetchRaw(`/api/products?${queryParams.toString()}`);
+    },
     { 
       server: true,
       key: 'living-room-products-initial'
@@ -109,9 +111,9 @@ const fetchCategoryAndProducts = async (isInitialFetch = false) => {
     // Fetch category first if we don't have it
     if (!categoryId.value) {
       console.log('Fetching category data for living-room');
-      const categoryResponse = await api.fetchRaw('/categories/by-slug/living-room');
+      const categoryResponse = await api.fetchRaw('/api/categories/living-room');
       
-      categoryId.value = categoryResponse.category?.id || null
+      categoryId.value = categoryResponse._id || null
       
       if (!categoryId.value) {
         throw new Error('Living room category not found')
@@ -124,21 +126,22 @@ const fetchCategoryAndProducts = async (isInitialFetch = false) => {
     }
     
     console.log('Fetching living room products:', {
-      category: categoryId.value,
+      categoryId: categoryId.value,
       page: currentPage.value,
-      limit: itemsPerPage,
-      skip: 0
+      limit: itemsPerPage
     });
     
-    // Fetch products for this category using api.fetchRaw
-    const response = await api.fetchRaw('/products', {
-      params: {
-        category: categoryId.value,
-        page: currentPage.value,
-        limit: itemsPerPage,
-        skip: 0 // Always include skip=0 for consistency
-      }
+    // Fetch products for this category using api.fetchRaw with proper query params
+    const queryParams = new URLSearchParams({
+      page: currentPage.value.toString(),
+      limit: itemsPerPage.toString()
     });
+    
+    if (categoryId.value) {
+      queryParams.append('categoryId', categoryId.value);
+    }
+    
+    const response = await api.fetchRaw(`/api/products?${queryParams.toString()}`);
     
     if (response) {
       // Update products - append for infinite scroll or replace for initial fetch

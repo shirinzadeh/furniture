@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import type { Product } from '~/types'
 import PageHeroBanner from '~/components/hero-banner/HeroBannerPage.vue'
 
@@ -10,14 +10,19 @@ const categoriesStore = useCategoriesStore()
 // State for products
 const products = ref<Product[]>([])
 const isLoading = ref(true)
+const isLoadingMore = ref(false)
 const error = ref<string | null>(null)
+const hasMoreProducts = ref(true)
 
-// Pagination
+// Pagination for infinite scroll
 const page = ref(1)
 const limit = ref(12)
-const totalPages = ref(1)
 const totalProducts = ref(0)
 const categoryId = ref<string | null>(null)
+
+// Observer for infinite scroll
+let observer: IntersectionObserver | null = null
+const observerTarget = ref<HTMLElement | null>(null)
 
 // Get category from URL
 const categorySlug = 'bedroom'
@@ -35,8 +40,15 @@ useHead({
 })
 
 // Fetch category and products
-const fetchCategoryAndProducts = async () => {
-  isLoading.value = true
+const fetchCategoryAndProducts = async (isLoadMore = false) => {
+  if (isLoadMore) {
+    isLoadingMore.value = true
+  } else {
+    isLoading.value = true
+    page.value = 1
+    products.value = []
+  }
+  
   error.value = null
   
   try {
@@ -47,39 +59,92 @@ const fetchCategoryAndProducts = async () => {
     
     // Set categoryId for filtering products
     if (category.value) {
-      categoryId.value = category.value.id
+      categoryId.value = category.value._id?.toString() || null
+      console.log('Bedroom category found:', category.value.name, 'ID:', categoryId.value)
+    } else {
+      console.log('Bedroom category not found')
     }
     
-    // Fetch products for this category
-    const response = await productsStore.fetchProducts({
-      page: page.value,
-      limit: limit.value,
-      category: categoryId.value || undefined
-    })
+    // Use useApi for consistent API calls
+    const api = useApi()
+    const queryParams = new URLSearchParams({
+      page: page.value.toString(),
+      limit: limit.value.toString()
+    });
+    
+    if (categoryId.value) {
+      queryParams.append('categoryId', categoryId.value);
+    }
+    
+    const response = await api.fetchRaw(`/api/products?${queryParams.toString()}`)
     
     if (response) {
-      products.value = productsStore.products
-      totalPages.value = productsStore.pagination.pages
-      totalProducts.value = productsStore.pagination.total
+      const newProducts = response.products || []
+      
+      if (isLoadMore) {
+        // Force reactivity update by creating new array reference
+        products.value = [...products.value, ...newProducts]
+      } else {
+        products.value = [...newProducts]
+      }
+      
+      totalProducts.value = response.pagination?.totalItems || 0
+      hasMoreProducts.value = products.value.length < totalProducts.value
+      
+      console.log(`Loaded ${newProducts.length} bedroom products, total: ${products.value.length}/${totalProducts.value}`)
     }
   } catch (err) {
     console.error('Error fetching bedroom data:', err)
     error.value = 'Failed to load bedroom products. Please try again later.'
   } finally {
     isLoading.value = false
+    isLoadingMore.value = false
   }
 }
 
-// Handle page change
-const handlePageChange = (newPage: number) => {
-  page.value = newPage
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-  fetchCategoryAndProducts()
+// Load more products
+const loadMoreProducts = () => {
+  if (!isLoadingMore.value && hasMoreProducts.value) {
+    page.value++
+    fetchCategoryAndProducts(true)
+  }
+}
+
+// Setup infinite scroll
+const setupInfiniteScroll = () => {
+  if (typeof window === 'undefined' || !window.IntersectionObserver) return
+  
+  if (observer) {
+    observer.disconnect()
+  }
+  
+  nextTick(() => {
+    if (!observerTarget.value) return
+    
+    observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMoreProducts.value && !isLoadingMore.value && !isLoading.value) {
+        loadMoreProducts()
+      }
+    }, {
+      rootMargin: '200px',
+      threshold: 0.1
+    })
+    
+    observer.observe(observerTarget.value)
+  })
 }
 
 // Fetch data on component mount
-onMounted(() => {
-  fetchCategoryAndProducts()
+onMounted(async () => {
+  await fetchCategoryAndProducts()
+  setupInfiniteScroll()
+})
+
+// Cleanup observer
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect()
+  }
 })
 </script>
 
@@ -128,20 +193,22 @@ onMounted(() => {
         />
       </div>
       
-      <!-- Pagination -->
-      <div v-if="totalPages > 1" class="flex justify-center mt-12">
-        <div class="flex space-x-2">
-          <button 
-            v-for="p in totalPages" 
-            :key="p"
-            @click="handlePageChange(p)"
-            class="w-10 h-10 flex items-center justify-center rounded-md"
-            :class="p === page ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'"
-          >
-            {{ p }}
-          </button>
+      <!-- Loading more indicator -->
+      <div v-if="isLoadingMore" class="flex justify-center py-8">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 border-t-2 border-r-2 border-purple-600 rounded-full animate-spin"></div>
+          <span class="text-gray-600 font-medium">Daha fazla ürün yükleniyor...</span>
         </div>
       </div>
-    </div>
-  </div>
-</template> 
+      
+      <!-- End of results message -->
+      <div v-if="!hasMoreProducts && products.length > 0 && !isLoadingMore" 
+        class="text-center text-gray-500 py-8 font-medium">
+        Tüm ürünler gösteriliyor ({{ totalProducts }} ürün)
+      </div>
+      
+             <!-- Intersection observer element for infinite scroll -->
+       <div ref="observerTarget" class="h-4 w-full"></div>
+     </div>
+   </div>
+ </template> 

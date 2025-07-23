@@ -86,10 +86,7 @@ const handleLogin = async () => {
   if (user) {
     console.log('user', user)
     // Show success toast
-    toast.showToast({
-      message: 'Logged in successfully',
-      type: 'success'
-    })
+    toast.success('Giriş Başarılı', 'Başarıyla giriş yaptınız')
 
     // Redirect to admin dashboard or the requested page
     const redirectPath = route.query.redirect?.toString() || '/admin'
@@ -97,7 +94,7 @@ const handleLogin = async () => {
 
     navigateTo(redirectPath)
   } else {
-    error.value = auth.error.value || 'Authentication failed'
+    error.value = authStore.error || 'Authentication failed'
   }
 }
 

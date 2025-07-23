@@ -7,17 +7,20 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (import.meta.server) {
     return
   }
-
+  
   try {
     const authStore = useAuthStore()
-    const { info } = useToast()
+    const toast = useToast()
     
     // Quick check for auth cookie
     const authCookie = useCookie('auth_token')
     
     if (!authCookie.value) {
-      info('Giriş Gerekli', 'Bu sayfayı görüntülemek için giriş yapmalısınız')
-      return navigateTo(`/login?redirect=${encodeURIComponent(to.fullPath)}`, { replace: true })
+      toast.info(
+        'Giriş Gerekli',
+        'Bu sayfaya erişmek için giriş yapmalısınız'
+      )
+      return navigateTo(`/auth/login?redirect=${encodeURIComponent(to.fullPath)}`, { replace: true })
     }
     
     // Initialize auth store and fetch profile
@@ -25,14 +28,20 @@ export default defineNuxtRouteMiddleware(async (to) => {
     
     // Check if authenticated
     if (!authStore.isAuthenticated) {
-      info('Giriş Gerekli', 'Bu sayfayı görüntülemek için giriş yapmalısınız')
-      return navigateTo(`/login?redirect=${encodeURIComponent(to.fullPath)}`, { replace: true })
+      toast.info(
+        'Giriş Gerekli',
+        'Bu sayfaya erişmek için giriş yapmalısınız'
+      )
+      return navigateTo(`/auth/login?redirect=${encodeURIComponent(to.fullPath)}`, { replace: true })
     }
     
-    // User is authenticated, continue
   } catch (error) {
-    console.error('Auth middleware error:', error)
-    // If there's an error, redirect to login
-    return navigateTo(`/login?redirect=${encodeURIComponent(to.fullPath)}`, { replace: true })
+    const toast = useToast()
+    toast.error(
+      'Kimlik Doğrulama Hatası',
+      'Giriş yaparken bir hata oluştu'
+    )
+    
+    return navigateTo('/auth/login', { replace: true })
   }
 }) 

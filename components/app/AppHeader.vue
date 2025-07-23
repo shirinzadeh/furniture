@@ -89,85 +89,82 @@ onUnmounted(() => {
     </div>
 
     <!-- Main header -->
-    <div class="bg-white py-4 border-b border-gray-100 shadow-sm">
-      <div class="container mx-auto flex justify-center items-center px-4">
-        <!-- Hamburger menu button - visible only on mobile -->
-        <button 
-          class="lg:hidden text-gray-700 hover:text-amber-700 focus:outline-none" 
-          @click="toggleMobileMenu" 
-          aria-label="Toggle menu"
-        >
-          <Icon v-if="!isMobileMenuOpen" name="ph:list" size="28" />
-          <Icon v-else name="ph:x" size="28" />
-        </button>
-
-        <!-- Search bar - hidden on small mobile, visible on tablet and up -->
-        <!-- <div class="relative hidden md:block w-64">
-          <input 
-            v-model="searchQuery" 
-            type="text" 
-            placeholder="Ara..." 
-            class="w-full pl-3 pr-10 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-gray-50" 
-            @keyup.enter="handleSearch" 
-          />
+    <div class="bg-white py-4 border-b border-gray-100 shadow-sm relative overflow-hidden">
+      <!-- Gradient background accent -->
+      <div class="absolute inset-0 bg-gradient-to-r from-amber-50/30 via-transparent to-amber-50/30"></div>
+      
+      <div class="container mx-auto flex justify-between items-center px-4 relative z-10">
+        <!-- Left section - Hamburger menu -->
+        <div class="flex items-center">
           <button 
-            @click="handleSearch" 
-            class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-amber-700"
+            class="lg:hidden text-gray-700 hover:text-amber-700 focus:outline-none p-2 rounded-lg hover:bg-amber-50 transition-all duration-200" 
+            @click="toggleMobileMenu" 
+            aria-label="Toggle menu"
           >
-            <Icon name="ph:magnifying-glass" size="20" />
+            <Icon v-if="!isMobileMenuOpen" name="ph:list" size="28" />
+            <Icon v-else name="ph:x" size="28" />
           </button>
-        </div> -->
+        </div>
 
-        <!-- Logo -->
-        <NuxtLink to="/" class="flex items-center">
-          <h1 class="text-2xl md:text-3xl font-serif font-bold text-amber-900">MEBEL</h1>
+        <!-- Center section - Logo -->
+        <NuxtLink to="/" class="flex items-center group">
+          <div class="flex items-center space-x-2">
+            <div class="w-10 h-10 bg-gradient-to-br from-amber-600 to-amber-800 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-200">
+              <Icon name="ph:chair" size="24" class="text-white" />
+            </div>
+            <h1 class="text-2xl md:text-3xl font-serif font-bold bg-gradient-to-r from-amber-800 to-amber-900 bg-clip-text text-transparent group-hover:from-amber-700 group-hover:to-amber-800 transition-all duration-200">
+              MEBEL
+            </h1>
+          </div>
         </NuxtLink>
 
-        <!-- User actions - simplified for mobile -->
-        <div class="flex items-center space-x-2 md:space-x-6">
+        <!-- Right section - User actions -->
+        <div class="flex items-center space-x-1 md:space-x-3">
           <!-- User account link - shown when authenticated -->
           <NuxtLink 
             v-if="authStore.isAuthenticated" 
             to="/account" 
-            class="text-gray-700 hover:text-amber-700 transition-colors hidden md:flex items-center"
+            class="flex items-center px-3 py-2 rounded-lg text-gray-700 hover:text-amber-700 hover:bg-amber-50 transition-all duration-200 group"
           >
-            <Icon name="ph:user" size="24" class="mr-1" />
-            <span class="hidden md:inline">Hesabım</span>
+            <Icon name="ph:user" size="24" class="group-hover:scale-110 transition-transform duration-200" />
+            <span class="hidden md:inline ml-2 font-medium">Hesabım</span>
           </NuxtLink>
           
           <!-- Login link - shown when not authenticated -->
           <NuxtLink 
             v-else
-            to="/login" 
-            class="text-gray-700 hover:text-amber-700 transition-colors hidden md:flex items-center"
+            to="/auth/login" 
+            class="flex items-center px-3 py-2 rounded-lg text-gray-700 hover:text-amber-700 hover:bg-amber-50 transition-all duration-200 group"
           >
-            <Icon name="ph:user" size="24" class="mr-1" />
-            <span class="hidden md:inline">Giriş Yap</span>
-          </NuxtLink>
-          
-          <!-- Mobile user icon -->
-          <NuxtLink 
-            :to="authStore.isAuthenticated ? '/account' : '/login'" 
-            class="text-gray-700 hover:text-amber-700 transition-colors md:hidden"
-          >
-            <Icon name="ph:user" size="24" />
+            <Icon name="ph:user" size="24" class="group-hover:scale-110 transition-transform duration-200" />
+            <span class="hidden md:inline ml-2 font-medium">Giriş Yap</span>
           </NuxtLink>
           
           <!-- Favorites link -->
-          <NuxtLink to="/favorites" class="text-gray-700 hover:text-amber-700 transition-colors">
-            <Icon name="ph:heart" size="24" />
+          <NuxtLink 
+            to="/favorites" 
+            class="flex items-center px-3 py-2 rounded-lg text-gray-700 hover:text-amber-700 hover:bg-amber-50 transition-all duration-200 group relative"
+          >
+            <Icon name="ph:heart" size="24" class="group-hover:scale-110 transition-transform duration-200" />
+            <span class="hidden lg:inline ml-2 font-medium">Favoriler</span>
           </NuxtLink>
           
-          <!-- Cart link with badge -->
-          <NuxtLink to="/cart" class="relative text-gray-700 hover:text-amber-700 transition-colors">
-            <Icon name="ph:shopping-cart" size="24" />
-            <!-- Cart badge -->
-            <span 
-              v-if="cartStore.itemCount > 0" 
-              class="absolute -top-2 -right-2 bg-amber-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold"
-            >
-              {{ cartStore.itemCount > 99 ? '99+' : cartStore.itemCount }}
-            </span>
+          <!-- Cart link with enhanced badge -->
+          <NuxtLink 
+            to="/cart" 
+            class="flex items-center px-3 py-2 rounded-lg text-gray-700 hover:text-amber-700 hover:bg-amber-50 transition-all duration-200 group relative"
+          >
+            <div class="relative">
+              <Icon name="ph:shopping-cart" size="24" class="group-hover:scale-110 transition-transform duration-200" />
+              <!-- Enhanced cart badge -->
+              <span 
+                v-if="cartStore.itemCount > 0" 
+                class="absolute -top-2 -right-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-lg animate-pulse"
+              >
+                {{ cartStore.itemCount > 99 ? '99+' : cartStore.itemCount }}
+              </span>
+            </div>
+            <span class="hidden lg:inline ml-2 font-medium">Sepet</span>
           </NuxtLink>
         </div>
       </div>
@@ -295,29 +292,60 @@ onUnmounted(() => {
       <div class="overflow-y-auto h-full pb-20">
         <!-- Mobile user info and cart -->
         <div class="p-4 border-b border-gray-100 space-y-4">
-          <span 
-            class="flex items-center space-x-2 text-gray-700 cursor-not-allowed opacity-70"
+          <!-- Mobile user account/login -->
+          <NuxtLink 
+            :to="authStore.isAuthenticated ? '/account' : '/auth/login'"
+            class="flex items-center space-x-3 text-gray-700 hover:text-amber-700 transition-colors p-2 rounded-lg hover:bg-amber-50"
+            @click="closeMobileMenu"
           >
-            <Icon name="ph:user" size="24" />
-            <span class="font-medium">Giriş Yap / Üye Ol</span>
-          </span>
+            <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+              <Icon name="ph:user" size="20" class="text-amber-700" />
+            </div>
+            <div class="flex flex-col">
+              <span class="font-medium">
+                {{ authStore.isAuthenticated ? 'Hesabım' : 'Giriş Yap' }}
+              </span>
+              <span v-if="authStore.user" class="text-sm text-gray-500">
+                {{ authStore.user.name }}
+              </span>
+            </div>
+          </NuxtLink>
+          
+          <!-- Mobile favorites link -->
+          <NuxtLink 
+            to="/favorites" 
+            class="flex items-center space-x-3 text-gray-700 hover:text-amber-700 transition-colors p-2 rounded-lg hover:bg-amber-50"
+            @click="closeMobileMenu"
+          >
+            <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <Icon name="ph:heart" size="20" class="text-red-600" />
+            </div>
+            <span class="font-medium">Favorilerim</span>
+          </NuxtLink>
           
           <!-- Mobile cart link -->
           <NuxtLink 
             to="/cart" 
-            class="flex items-center justify-between text-gray-700 hover:text-amber-700 transition-colors"
+            class="flex items-center justify-between text-gray-700 hover:text-amber-700 transition-colors p-2 rounded-lg hover:bg-amber-50"
             @click="closeMobileMenu"
           >
-            <div class="flex items-center space-x-2">
-              <Icon name="ph:shopping-cart" size="24" />
-              <span class="font-medium">Sepetim</span>
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center relative">
+                <Icon name="ph:shopping-cart" size="20" class="text-amber-700" />
+                <span 
+                  v-if="cartStore.itemCount > 0" 
+                  class="absolute -top-1 -right-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold"
+                >
+                  {{ cartStore.itemCount > 99 ? '99+' : cartStore.itemCount }}
+                </span>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-medium">Sepetim</span>
+                <span v-if="cartStore.itemCount > 0" class="text-sm text-gray-500">
+                  {{ cartStore.itemCount }} ürün
+                </span>
+              </div>
             </div>
-            <span 
-              v-if="cartStore.itemCount > 0" 
-              class="bg-amber-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold"
-            >
-              {{ cartStore.itemCount > 99 ? '99+' : cartStore.itemCount }}
-            </span>
           </NuxtLink>
         </div>
 

@@ -23,7 +23,7 @@ const props = withDefaults(defineProps<Props>(), {
   error: null,
   limit: 4,
   viewAllLink: '/flash-prices',
-  viewAllText: 'Fırsatları Yakala >',
+  viewAllText: 'Fırsatları Yakala',
   backgroundColor: 'bg-white'
 })
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import type { Product } from '~/types'
 import PageHeroBanner from '~/components/hero-banner/HeroBannerPage.vue'
 
@@ -17,43 +17,66 @@ const productsStore = useProductsStore()
 // State for flash sale products
 const flashSaleProducts = ref<Product[]>([])
 const isLoading = ref(true)
+const isLoadingMore = ref(false)
 const error = ref<string | null>(null)
 const retryCount = ref(0)
 const maxRetries = 3
+const hasMoreProducts = ref(true)
 
-// Pagination
+// Pagination for infinite scroll
 const currentPage = ref(1)
 const itemsPerPage = 12
-const totalPages = ref(1)
+const totalProducts = ref(0)
+
+// Observer for infinite scroll
+let observer: IntersectionObserver | null = null
+const observerTarget = ref<HTMLElement | null>(null)
 
 // Fetch flash sale products with retry mechanism
-const fetchFlashSaleProducts = async () => {
-  isLoading.value = true
+const fetchFlashSaleProducts = async (isLoadMore = false) => {
+  if (isLoadMore) {
+    isLoadingMore.value = true
+  } else {
+    isLoading.value = true
+    currentPage.value = 1
+    flashSaleProducts.value = []
+    retryCount.value = 0
+  }
+  
   error.value = null
   
   try {
-    // Use the dedicated method for fetching sale products with pagination
-    const response = await productsStore.fetchSaleProducts(
-      itemsPerPage,
-      (currentPage.value - 1) * itemsPerPage
-    )
+    // Use useApi for consistent API calls
+    const api = useApi()
+    const queryParams = new URLSearchParams({
+      onSale: 'true',
+      page: currentPage.value.toString(),
+      limit: itemsPerPage.toString()
+    });
+    
+    const response = await api.fetchRaw(`/api/products?${queryParams.toString()}`)
     
     if (response) {
-      // Use the saleProducts from the store
-      flashSaleProducts.value = productsStore.saleProducts
+      const newProducts = response.products || []
       
-      // Calculate total pages
-      if (productsStore.totalSaleProducts) {
-        totalPages.value = Math.ceil(productsStore.totalSaleProducts / itemsPerPage)
+      if (isLoadMore) {
+        // Force reactivity update by creating new array reference
+        flashSaleProducts.value = [...flashSaleProducts.value, ...newProducts]
+      } else {
+        flashSaleProducts.value = [...newProducts]
       }
       
+      totalProducts.value = response.pagination?.totalItems || 0
+      hasMoreProducts.value = flashSaleProducts.value.length < totalProducts.value
+      
+      console.log(`Loaded ${newProducts.length} flash sale products, total: ${flashSaleProducts.value.length}/${totalProducts.value}`)
+      
       // If no products found but we have retries left, try again
-      if (flashSaleProducts.value.length === 0 && retryCount.value < maxRetries) {
+      if (flashSaleProducts.value.length === 0 && retryCount.value < maxRetries && !isLoadMore) {
         retryCount.value++
         console.log(`No flash sale products found, retrying (${retryCount.value}/${maxRetries})`)
-        // Clear cache before retrying
-        productsStore.clearCache(`sale-products-${itemsPerPage}-${(currentPage.value - 1) * itemsPerPage}`)
-        setTimeout(() => fetchFlashSaleProducts(), 1000) // Wait 1 second before retrying
+        productsStore.clearCache()
+        setTimeout(() => fetchFlashSaleProducts(), 1000)
         return
       }
     }
@@ -62,33 +85,50 @@ const fetchFlashSaleProducts = async () => {
     console.error('Error fetching flash sale products:', err)
     
     // Retry on error if we have retries left
-    if (retryCount.value < maxRetries) {
+    if (retryCount.value < maxRetries && !isLoadMore) {
       retryCount.value++
       console.log(`Error fetching flash sale products, retrying (${retryCount.value}/${maxRetries})`)
-      // Clear cache before retrying
-      productsStore.clearCache(`sale-products-${itemsPerPage}-${(currentPage.value - 1) * itemsPerPage}`)
-      setTimeout(() => fetchFlashSaleProducts(), 1000) // Wait 1 second before retrying
+      productsStore.clearCache()
+      setTimeout(() => fetchFlashSaleProducts(), 1000)
       return
     }
   } finally {
     isLoading.value = false
+    isLoadingMore.value = false
   }
 }
 
-// Handle page change
-const handlePageChange = (page: number) => {
-  currentPage.value = page
-  fetchFlashSaleProducts()
-  // Scroll to top
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+// Load more products
+const loadMoreProducts = () => {
+  if (!isLoadingMore.value && hasMoreProducts.value) {
+    currentPage.value++
+    fetchFlashSaleProducts(true)
+  }
 }
 
-// Watch for changes in the store's sale products
-watch(() => productsStore.saleProducts, (newProducts) => {
-  if (newProducts.length > 0) {
-    flashSaleProducts.value = newProducts
+// Setup infinite scroll
+const setupInfiniteScroll = () => {
+  if (typeof window === 'undefined' || !window.IntersectionObserver) return
+  
+  if (observer) {
+    observer.disconnect()
   }
-}, { deep: true })
+  
+  nextTick(() => {
+    if (!observerTarget.value) return
+    
+    observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMoreProducts.value && !isLoadingMore.value && !isLoading.value) {
+        loadMoreProducts()
+      }
+    }, {
+      rootMargin: '200px',
+      threshold: 0.1
+    })
+    
+    observer.observe(observerTarget.value)
+  })
+}
 
 // Format price with Turkish locale
 const formatPrice = (price: number) => {
@@ -101,7 +141,17 @@ const calculateDiscount = (originalPrice: number, salePrice: number) => {
 }
 
 // Fetch data on component mount
-onMounted(fetchFlashSaleProducts)
+onMounted(async () => {
+  await fetchFlashSaleProducts()
+  setupInfiniteScroll()
+})
+
+// Cleanup observer
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect()
+  }
+})
 </script>
 
 <template>
@@ -123,7 +173,7 @@ onMounted(fetchFlashSaleProducts)
       <div v-else-if="error" class="text-center py-16">
         <p class="text-red-500 mb-4">{{ error }}</p>
         <button 
-          @click="fetchFlashSaleProducts" 
+          @click="() => fetchFlashSaleProducts()" 
           class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
         >
           Tekrar Dene
@@ -180,24 +230,22 @@ onMounted(fetchFlashSaleProducts)
           </NuxtLink>
         </div>
 
-        <!-- Pagination -->
-        <div v-if="totalPages > 1" class="mt-12 flex justify-center">
-          <div class="flex space-x-2">
-            <button 
-              v-for="page in totalPages" 
-              :key="page" 
-              @click="handlePageChange(page)" 
-              :class="[
-                'px-4 py-2 rounded transition',
-                currentPage === page 
-                  ? 'bg-red-500 text-white' 
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              ]"
-            >
-              {{ page }}
-            </button>
+        <!-- Loading more indicator -->
+        <div v-if="isLoadingMore" class="flex justify-center py-8">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 border-t-2 border-r-2 border-red-500 rounded-full animate-spin"></div>
+            <span class="text-gray-600 font-medium">Daha fazla ürün yükleniyor...</span>
           </div>
         </div>
+        
+        <!-- End of results message -->
+        <div v-if="!hasMoreProducts && flashSaleProducts.length > 0 && !isLoadingMore" 
+          class="text-center text-gray-500 py-8 font-medium">
+          Tüm flaş fiyatlı ürünler gösteriliyor ({{ totalProducts }} ürün)
+        </div>
+        
+        <!-- Intersection observer element for infinite scroll -->
+        <div ref="observerTarget" class="h-4 w-full"></div>
       </div>
     </div>
   </div>
@@ -245,6 +293,6 @@ onMounted(fetchFlashSaleProducts)
   right: 0;
   height: 3px;
   background-color: rgba(239, 68, 68, 0.7);
-  animation: pulse-red 2s infinite;
-}
+      animation: pulse-red 2s infinite;
+  }
 </style> 

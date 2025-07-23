@@ -55,7 +55,7 @@ const fetchWinterFlashSaleProducts = async () => {
         retryCount.value++
         console.log(`No winter flash sale products found, retrying (${retryCount.value}/${maxRetries})`)
         // Clear cache before retrying
-        productsStore.clearCache(`sale-products-8`)
+        productsStore.clearCache()
         setTimeout(() => fetchWinterFlashSaleProducts(), 1000) // Wait 1 second before retrying
         return
       }
@@ -69,7 +69,7 @@ const fetchWinterFlashSaleProducts = async () => {
       retryCount.value++
       console.log(`Error fetching winter flash sale products, retrying (${retryCount.value}/${maxRetries})`)
       // Clear cache before retrying
-      productsStore.clearCache(`sale-products-8`)
+      productsStore.clearCache()
       setTimeout(() => fetchWinterFlashSaleProducts(), 1000) // Wait 1 second before retrying
       return
     }
@@ -120,7 +120,7 @@ onMounted(() => {
       :error="error"
       :limit="4"
       view-all-link="/winter-flash-sales"
-      view-all-text="Fırsatları Yakala >"
+      view-all-text="Fırsatları Yakala"
       background-color="bg-gradient-to-b from-blue-200 to-white"
     />
   </div>

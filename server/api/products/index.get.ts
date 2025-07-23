@@ -32,6 +32,7 @@ export default defineEventHandler(async (event) => {
     const categoryId = query.categoryId as string
     const excludeId = query.excludeId as string // For excluding current product in recommendations
     const search = query.search as string
+    const sort = query.sort as string // Add sort parameter
     
     // Build filter
     const filter: any = {}
@@ -64,22 +65,57 @@ export default defineEventHandler(async (event) => {
     // Calculate skip for pagination
     const skip = (page - 1) * limit
     
-    // Determine sort order based on query type
+    // Determine sort order based on query type and sort parameter
     let sortOptions: any = { createdAt: -1 } // Default sort
     
     // Define index hints based on the sort criteria to improve query performance
     let indexHint: string | null = null
     
+    // Handle general sorting first
+    if (sort) {
+      switch (sort) {
+        case 'price_asc':
+          sortOptions = { price: 1, createdAt: -1 }
+          indexHint = null // Remove index hint to avoid errors
+          break
+        case 'price_desc':
+          sortOptions = { price: -1, createdAt: -1 }
+          indexHint = null // Remove index hint to avoid errors
+          break
+        case 'name_asc':
+          sortOptions = { name: 1, createdAt: -1 }
+          indexHint = null // Remove index hint to avoid errors
+          break
+        case 'name_desc':
+          sortOptions = { name: -1, createdAt: -1 }
+          indexHint = null // Remove index hint to avoid errors
+          break
+        case 'newest':
+        default:
+          sortOptions = { createdAt: -1 }
+          indexHint = null // Remove index hint to avoid errors
+          break
+      }
+    }
+    
+    // Override sort for specific query types if needed
     if (recommended) {
       // For recommended products, prioritize featured items
       sortOptions = { featured: -1, createdAt: -1 }
-      indexHint = 'featured_1_createdAt_-1'
+      indexHint = null // Remove index hint to avoid errors
     } else if (bestseller) {
       sortOptions = { featured: -1, createdAt: -1 }
-      indexHint = 'featured_1_createdAt_-1'
+      indexHint = null // Remove index hint to avoid errors
     } else if (onSale) {
-      sortOptions = { createdAt: -1 }
-      indexHint = 'createdAt_-1'
+      // For sales, keep user's sort preference but add sale priority
+      if (sort === 'price_asc') {
+        sortOptions = { price: 1, createdAt: -1 }
+      } else if (sort === 'price_desc') {
+        sortOptions = { price: -1, createdAt: -1 }
+      } else {
+        sortOptions = { createdAt: -1 }
+      }
+      indexHint = null // Remove index hint to avoid errors
     }
     
     // Define fields to project (include only necessary fields)
@@ -106,10 +142,10 @@ export default defineEventHandler(async (event) => {
       })
       .lean(); // Convert to plain JS objects (faster)
     
-    // Apply hint only if indexHint is not null
-    if (indexHint) {
-      productsQuery = productsQuery.hint(indexHint);
-    }
+    // Apply hint only if indexHint is not null (disabled for now to avoid index errors)
+    // if (indexHint) {
+    //   productsQuery = productsQuery.hint(indexHint);
+    // }
     
     const [products, total] = await Promise.all([
       productsQuery,

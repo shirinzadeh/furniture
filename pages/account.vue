@@ -195,8 +195,48 @@
             <div v-else-if="activeTab === 'favorites'" class="p-6">
               <h2 class="text-xl font-semibold text-gray-900 mb-6">Favorilerim</h2>
               
-              <!-- Favorites will be implemented -->
-              <div class="text-center py-12">
+              <!-- Loading State -->
+              <div v-if="favoritesStore.loading" class="text-center py-12">
+                <Icon name="mdi:loading" size="64" class="mx-auto text-gray-400 mb-4 animate-spin" />
+                <p class="text-gray-600">Favoriler yükleniyor...</p>
+              </div>
+              
+              <!-- Favorites List -->
+              <div v-else-if="favoritesStore.hasFavorites" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div v-for="favorite in favoritesStore.favoriteItems" :key="favorite.id" class="bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                  <div class="aspect-w-16 aspect-h-12">
+                    <img 
+                      :src="favorite.product.images?.[0] || '/images/placeholder.jpg'" 
+                      :alt="favorite.product.name"
+                      class="w-full h-48 object-cover"
+                    />
+                  </div>
+                  <div class="p-4">
+                    <h3 class="font-semibold text-gray-900 mb-2">{{ favorite.product.name }}</h3>
+                    <p class="text-sm text-gray-600 mb-2 line-clamp-2">{{ favorite.product.description }}</p>
+                    <div class="flex items-center justify-between">
+                      <span class="text-lg font-bold text-amber-600">{{ favorite.product.price }}₺</span>
+                      <div class="flex space-x-2">
+                        <NuxtLink 
+                          :to="`/product/${favorite.product.slug}`"
+                          class="px-3 py-1 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors"
+                        >
+                          İncele
+                        </NuxtLink>
+                        <button
+                          @click="removeFavorite(favorite.productId)"
+                          class="px-3 py-1 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-100 transition-colors"
+                        >
+                          <Icon name="mdi:heart-remove" size="16" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Empty State -->
+              <div v-else class="text-center py-12">
                 <Icon name="mdi:heart-outline" size="64" class="mx-auto text-gray-400 mb-4" />
                 <h3 class="text-lg font-medium text-gray-900 mb-2">Henüz favori ürün yok</h3>
                 <p class="text-gray-600 mb-6">Beğendiğiniz ürünleri favorilere ekleyin</p>
@@ -345,11 +385,19 @@ const updateProfile = async () => {
   profileLoading.value = true
   
   try {
-    // API call to update profile would go here
-    // For now, just show success
+    await $fetch('/api/auth/profile', {
+      method: 'PUT',
+      body: {
+        name: profileForm.name
+      }
+    })
+    
+    // Refresh user data from auth store
+    await authStore.fetchProfile()
+    
     success('Profil Güncellendi', 'Bilgileriniz başarıyla güncellendi')
-  } catch (error) {
-    toastError('Güncelleme Hatası', 'Profil güncellenirken bir hata oluştu')
+  } catch (error: any) {
+    toastError('Güncelleme Hatası', error.data?.message || 'Profil güncellenirken bir hata oluştu')
   } finally {
     profileLoading.value = false
   }
@@ -370,16 +418,22 @@ const changePassword = async () => {
   passwordLoading.value = true
   
   try {
-    // API call to change password would go here
-    // For now, just show success
+    await $fetch('/api/auth/password', {
+      method: 'PUT',
+      body: {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword
+      }
+    })
+    
     success('Şifre Değiştirildi', 'Şifreniz başarıyla güncellendi')
     
     // Clear form
     passwordForm.currentPassword = ''
     passwordForm.newPassword = ''
     passwordForm.confirmNewPassword = ''
-  } catch (error) {
-    toastError('Şifre Hatası', 'Şifre değiştirilirken bir hata oluştu')
+  } catch (error: any) {
+    toastError('Şifre Hatası', error.data?.message || 'Şifre değiştirilirken bir hata oluştu')
   } finally {
     passwordLoading.value = false
   }
@@ -392,6 +446,16 @@ useHead({
     { name: 'description', content: 'MEBEL hesap bilgilerinizi yönetin' }
   ]
 })
+
+// Remove favorite
+const removeFavorite = async (productId: string) => {
+  try {
+    await favoritesStore.removeFavorite(productId)
+    success('Favorilerden Çıkarıldı', 'Ürün favorilerinizden kaldırıldı')
+  } catch (error: any) {
+    toastError('Hata', 'Ürün favorilerden kaldırılırken bir hata oluştu')
+  }
+}
 
 // Initialize data on mount
 onMounted(async () => {

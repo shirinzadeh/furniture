@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
     if (!email || !password) {
       throw createError({
         statusCode: 400,
-        message: 'Email and password are required'
+        message: 'Email ve şifre gereklidir'
       })
     }
     
@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
     if (!user) {
       throw createError({
         statusCode: 401,
-        message: 'Invalid email or password'
+        message: 'Geçersiz email veya şifre'
       })
     }
     
@@ -30,7 +30,7 @@ export default defineEventHandler(async (event) => {
     if (!isPasswordValid) {
       throw createError({
         statusCode: 401,
-        message: 'Invalid email or password'
+        message: 'Geçersiz email veya şifre'
       })
     }
     

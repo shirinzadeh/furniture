@@ -99,8 +99,8 @@
               v-model="form.categoryId"
               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500"
             >
-              <option value="">None</option>
-              <option v-for="category in categories" :key="category.id" :value="category.id">
+              <option value="">Select Category</option>
+              <option v-for="category in categories" :key="category._id" :value="category._id">
                 {{ category.name }}
               </option>
             </select>
@@ -262,7 +262,7 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
-const { showToast } = useToast()
+const toast = useToast()
 
 // Get product ID from route
 const productId = route.params.id
@@ -296,13 +296,13 @@ const fetchCategories = async () => {
     const { data } = await useFetch('/api/admin/categories')
     if (data.value && data.value.categories) {
       categories.value = data.value.categories
+      console.log('Fetched categories for edit:', data.value.categories)
     }
   } catch (err) {
-    console.error('Error fetching categories:', err)
-    showToast({
-      message: 'Failed to load categories',
-      type: 'error'
-    })
+    toast.error(
+      'Kategoriler Yüklenemedi',
+      'Kategoriler yüklenemedi'
+    )
   }
 }
 
@@ -335,16 +335,17 @@ const fetchProduct = async () => {
       form.stock = product.stock !== undefined ? product.stock.toString() : '0'
       form.featured = product.featured || false
       form.images = product.images || []
+      
+   
     } else {
       throw new Error('Product not found')
     }
   } catch (err) {
-    console.error('Error fetching product:', err)
     error.value = err.message || 'Failed to load product'
-    showToast({
-      message: error.value,
-      type: 'error'
-    })
+    toast.error(
+      'Yükleme Hatası',
+      error.value
+    )
   } finally {
     loading.value = false
   }
@@ -418,21 +419,18 @@ const updateProduct = async () => {
     }
     
     // Show success toast
-    showToast({
-      title: 'Product Updated',
-      message: 'Product has been updated successfully',
-      type: 'success'
-    })
+    toast.success(
+      'Ürün Güncellendi',
+      'Ürün başarıyla güncellendi'
+    )
     
     // Refresh product data
     await fetchProduct()
   } catch (err) {
-    console.error('Error updating product:', err)
-    showToast({
-      title: 'Update Failed',
-      message: err.message || 'Failed to update product',
-      type: 'error'
-    })
+    toast.error(
+      'Güncelleme Hatası',
+      err.message || 'Ürün güncellenirken bir hata oluştu'
+    )
   } finally {
     isSubmitting.value = false
   }
@@ -457,19 +455,18 @@ const deleteProduct = async () => {
     }
     
     // Show success toast
-    showToast({
-      message: 'Product deleted successfully',
-      type: 'success'
-    })
+    toast.success(
+      'Ürün Silindi',
+      'Ürün başarıyla silindi'
+    )
     
     // Redirect to product list
     router.push('/admin/products')
   } catch (err) {
-    console.error('Error deleting product:', err)
-    showToast({
-      message: err.message || 'Failed to delete product',
-      type: 'error'
-    })
+    toast.error(
+      'Silme Hatası',
+      err.message || 'Ürün silinirken bir hata oluştu'
+    )
     showDeleteModal.value = false
   } finally {
     isSubmitting.value = false

@@ -56,8 +56,8 @@
               v-model="form.categoryId"
               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500"
             >
-              <option value="">None</option>
-              <option v-for="category in categories" :key="category.id" :value="category.id">
+              <option value="">Select Category</option>
+              <option v-for="category in categories" :key="category._id" :value="category._id">
                 {{ category.name }}
               </option>
             </select>
@@ -178,11 +178,12 @@ definePageMeta({
 
 // Router
 const router = useRouter()
-const { showToast } = useToast()
+const toast = useToast()
 
 // Types
 interface Category {
-  id: string
+  _id: string
+  id?: string
   name: string
 }
 
@@ -209,21 +210,19 @@ const form = reactive({
 // Fetch categories
 const fetchCategories = async () => {
   try {
-    // Use useAsyncData to ensure proper Nuxt lifecycle
-    const { data } = await useAsyncData<{ categories?: Category[] }>(
-      'admin-categories',
-      () => $fetch<{ categories?: Category[] }>('/api/admin/categories')
-    )
+    // Fetch categories directly from API
+    const response = await $fetch('/api/admin/categories')
     
-    if (data.value) {
-      categories.value = data.value.categories || []
+    if (response && response.categories) {
+      categories.value = response.categories
+      console.log('Fetched categories:', response.categories)
     }
   } catch (err: any) {
     console.error('Error fetching categories:', err)
-    showToast({
-      message: 'Failed to load categories',
-      type: 'error'
-    })
+    toast.error(
+      'Kategoriler Yüklenemedi',
+      'Kategoriler yüklenemedi'
+    )
   }
 }
 
@@ -245,7 +244,7 @@ const generateSlug = () => {
 }
 
 // Controlled handling of image updates to prevent unwanted reactivity
-const onImagesUpdate = (newImages) => {
+const onImagesUpdate = (newImages: string[]) => {
   form.images = [...newImages]
 }
 
@@ -274,18 +273,19 @@ const createProduct = async () => {
         description: form.description || null,
         categoryId: form.categoryId || null,
         price: parseFloat(form.price),
-        compareAtPrice: form.compareAtPrice ? parseFloat(form.compareAtPrice) : null,
+        salePrice: form.compareAtPrice ? parseFloat(form.compareAtPrice) : null,
         stock: parseInt(form.stock) || 0,
         featured: form.featured,
-        images: form.images
+        images: form.images,
+        inStock: true
       }
     })
     
     // Show success toast
-    showToast({
-      message: 'Product created successfully',
-      type: 'success'
-    })
+    toast.success(
+      'Ürün Oluşturuldu',
+      'Ürün başarıyla oluşturuldu'
+    )
     
     // Redirect to product list
     router.push('/admin/products')
@@ -293,10 +293,10 @@ const createProduct = async () => {
     console.error('Error creating product:', err)
     
     // Show error toast
-    showToast({
-      message: err.data?.message || 'Failed to create product',
-      type: 'error'
-    })
+    toast.error(
+      'Ürün Oluşturulamadı',
+      err.data?.message || 'Ürün oluşturulamadı'
+    )
   } finally {
     isSubmitting.value = false
   }

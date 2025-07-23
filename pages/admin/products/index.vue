@@ -472,16 +472,16 @@ const deleteProduct = async () => {
     showDeleteModal.value = false
     productToDelete.value = null
     
-    toast.showToast({ 
-      message: 'Product deleted successfully', 
-      type: 'success' 
-    })
+    toast.success(
+      'Ürün Silindi',
+      'Ürün başarıyla silindi'
+    )
   } catch (err: any) {
     console.error('Error deleting product:', err)
-    toast.showToast({ 
-      message: err.data?.message || 'Failed to delete product', 
-      type: 'error' 
-    })
+    toast.error(
+      'Ürün Silinemedi',
+      err.data?.message || 'Ürün silinemedi'
+    )
   } finally {
     formSubmitting.value = false
   }
