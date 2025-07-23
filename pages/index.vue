@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, watch, nextTick } from 'vue'
 import type { Product, Category } from '~/types'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import ProductCard from '~/components/product/ProductCard.vue'
 import Button from '~/components/ui/UiButton.vue'
-
+import FurnitureLoader from '~/components/ui/FurnitureLoader.vue'
 
 // Import Pinia stores
 const productsStore = useProductsStore()
 const categoriesStore = useCategoriesStore()
+
+// Page loading states
+const isPageLoading = ref(true)
+const loadingProgress = ref(0)
+const loadingStep = ref(1)
 
 // State for winter flash sale products
 const winterFlashSaleProducts = ref<Product[]>([])
@@ -226,6 +231,8 @@ const handleAddToCart = (productId: string) => {
   console.log('Add to cart:', productId)
 }
 
+
+
 // Fetch data on page load with error handling
 try {
   await Promise.all([
@@ -261,12 +268,101 @@ productsStore.ensureArraysInitialized();
 if (!winterFlashSaleProducts.value) winterFlashSaleProducts.value = [];
 if (!bestsellerProducts.value) bestsellerProducts.value = [];
 if (!recommendedProducts.value) recommendedProducts.value = [];
+
+// Track loading states of all sections
+const allSectionsLoaded = computed(() => {
+  return !isLoadingWinterSale.value && 
+         !isLoadingBestsellers.value && 
+         !isLoadingRecommended.value &&
+         !productsStore.loading &&
+         !categoriesStore.loading
+})
+
+// Update loading progress based on completed sections
+const updateLoadingProgress = () => {
+  let completed = 0
+  let total = 5 // Total number of loading sections
+  
+  if (!productsStore.loading) completed++
+  if (!categoriesStore.loading) completed++
+  if (!isLoadingWinterSale.value) completed++
+  if (!isLoadingBestsellers.value) completed++
+  if (!isLoadingRecommended.value) completed++
+  
+  loadingProgress.value = (completed / total) * 100
+  
+  // Update loading step
+  if (completed >= 1) loadingStep.value = 2
+  if (completed >= 3) loadingStep.value = 3
+  if (completed >= 5) loadingStep.value = 4
+}
+
+// Watch for loading state changes
+watch([
+  () => productsStore.loading,
+  () => categoriesStore.loading,
+  isLoadingWinterSale,
+  isLoadingBestsellers,
+  isLoadingRecommended
+], () => {
+  updateLoadingProgress()
+  
+  // Hide page loading when all sections are loaded
+  if (allSectionsLoaded.value) {
+    setTimeout(() => {
+      isPageLoading.value = false
+    }, 500) // Small delay for smooth transition
+  }
+}, { immediate: true })
+
+// Also add a fallback timeout to ensure loader doesn't stay forever
+setTimeout(() => {
+  if (isPageLoading.value) {
+    console.log('Forcing loader to hide after timeout')
+    isPageLoading.value = false
+  }
+}, 10000) // 10 seconds maximum
+
+// Initialize on mount
+onMounted(() => {
+  updateLoadingProgress()
+  
+  // Quick check if everything is already loaded
+  nextTick(() => {
+    if (allSectionsLoaded.value) {
+      setTimeout(() => {
+        isPageLoading.value = false
+      }, 1000) // Give it 1 second then hide
+    }
+  })
+  
+  // Debug loading states
+  console.log('Loading states on mount:', {
+    productsLoading: productsStore.loading,
+    categoriesLoading: categoriesStore.loading,
+    winterSaleLoading: isLoadingWinterSale.value,
+    bestsellersLoading: isLoadingBestsellers.value,
+    recommendedLoading: isLoadingRecommended.value,
+    allLoaded: allSectionsLoaded.value
+  })
+})
 </script>
 
 <template>
   <div>
-    <!-- Hero Banner -->
-    <HeroBanner />
+    <!-- Creative Loading Screen -->
+    <FurnitureLoader 
+      v-if="isPageLoading"
+      :progress="loadingProgress"
+      :current-step="loadingStep"
+      class="furniture-loader-transition"
+    />
+    
+    <!-- Main Content -->
+    <Transition name="page-fade" appear>
+      <div v-if="!isPageLoading" class="page-content">
+        <!-- Hero Banner -->
+        <HeroBanner />
     
     <!-- Winter Flash Sale Section -->
     <ProductWinterFlashSale 
@@ -376,6 +472,43 @@ if (!recommendedProducts.value) recommendedProducts.value = [];
       view-all-text="Tümünü Gör"
       background-color="bg-amber-50"
     />
+      </div>
+    </Transition>
   </div>
 </template>
+
+<style scoped>
+.page-fade-enter-active {
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(20px) scale(0.98);
+}
+
+.page-fade-enter-to {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.page-content {
+  animation: contentSlideUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes contentSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.furniture-loader-transition {
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+</style>
 
