@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useProductSort } from '~/composables/useProductSort'
 import type { Product, Category } from '~/types'
 import ProductCard from '~/components/product/ProductCard.vue'
 
@@ -22,15 +23,8 @@ const limit = 12
 const retryCount = ref(0)
 const maxRetries = 3
 
-// Sort options
-const sortOptions = [
-  { label: 'En Yeniler', value: 'newest' },
-  { label: 'Fiyat (Artan)', value: 'price_asc' },
-  { label: 'Fiyat (Azalan)', value: 'price_desc' },
-  { label: 'İsim (A-Z)', value: 'name_asc' },
-  { label: 'İsim (Z-A)', value: 'name_desc' },
-]
-const selectedSort = ref('newest')
+// Sort options - using centralized composable
+const { selectedSort, sortOptions } = useProductSort()
 
 // Fetch category data with retry mechanism and timeout
 const fetchCategoryData = async () => {

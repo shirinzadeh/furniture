@@ -1,29 +1,110 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useCartStore, useAuthStore } from '~/stores'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { useCartStore, useAuthStore, useCategoriesStore } from '~/stores'
+import { TIMEOUTS, PAGINATION, PRODUCT } from '~/composables/useConstants'
 
 const searchQuery = ref('')
 const isDropdownOpen = ref(false)
 const isMobileMenuOpen = ref(false)
+const isSearchFocused = ref(false)
 const windowWidth = ref(0)
 
-// Initialize stores
+// Search suggestions
+const searchSuggestions = ref<Array<{id: string, name: string, slug: string}>>([])
+const isLoadingSearch = ref(false)
+const showSuggestions = ref(false)
+
+// Initialize stores and API
 const cartStore = useCartStore()
 const authStore = useAuthStore()
+const categoriesStore = useCategoriesStore()
+const { fetchRaw } = useApi()
 
-const categories = [
-  { name: 'Living Room', slug: 'living-room' },
-  { name: 'Bedroom', slug: 'bedroom' },
-  { name: 'Dining Room', slug: 'dining-room' },
-  { name: 'Office', slug: 'office' },
-  { name: 'Kids & Youth', slug: 'kids-youth' },
-  { name: 'Wardrobe & Entryway', slug: 'wardrobe-entryway' }
-]
+// Use categories from store with computed for reactivity
+const categories = computed(() => {
+  // Fallback categories if store is empty or loading
+  const fallbackCategories = [
+    { name: 'Living Room', slug: 'living-room' },
+    { name: 'Bedroom', slug: 'bedroom' },
+    { name: 'Dining Room', slug: 'dining-room' },
+    { name: 'Office', slug: 'office' },
+    { name: 'Kids & Youth', slug: 'kids-youth' },
+    { name: 'Wardrobe & Entryway', slug: 'wardrobe-entryway' }
+  ]
+  
+  // Return store categories if available, otherwise fallback
+  return categoriesStore.categories.length > 0 
+    ? categoriesStore.categories.map(cat => ({ name: cat.name, slug: cat.slug }))
+    : fallbackCategories
+})
+
+// Debounced search for suggestions
+let searchTimeout: NodeJS.Timeout | null = null
+
+const searchProducts = async (query: string) => {
+  if (!query.trim() || query.length < PRODUCT.MIN_SEARCH_LENGTH) {
+    searchSuggestions.value = []
+    showSuggestions.value = false
+    return
+  }
+
+  try {
+    isLoadingSearch.value = true
+    const response = await fetchRaw<{products: Array<{_id: string, name: string, slug: string}>}>(`/products?search=${encodeURIComponent(query)}&limit=${PAGINATION.SUGGESTIONS_LIMIT}`)
+    searchSuggestions.value = response.products.map(p => ({
+      id: p._id,
+      name: p.name,
+      slug: p.slug
+    }))
+    showSuggestions.value = true
+  } catch (error) {
+    console.error('Search error:', error)
+    searchSuggestions.value = []
+    showSuggestions.value = false
+  } finally {
+    isLoadingSearch.value = false
+  }
+}
+
+// Watch search query for suggestions
+watch(searchQuery, (newQuery) => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+  
+  searchTimeout = setTimeout(() => {
+    if (isSearchFocused.value) {
+      searchProducts(newQuery)
+    }
+  }, TIMEOUTS.SEARCH_DEBOUNCE)
+})
 
 const handleSearch = () => {
   if (searchQuery.value.trim()) {
+    showSuggestions.value = false
     navigateTo(`/search?q=${encodeURIComponent(searchQuery.value)}`)
   }
+}
+
+const handleSuggestionClick = (suggestion: {slug: string, name: string}) => {
+  searchQuery.value = suggestion.name
+  showSuggestions.value = false
+  navigateTo(`/product/${suggestion.slug}`)
+}
+
+const onSearchFocus = () => {
+  isSearchFocused.value = true
+  if (searchQuery.value.length >= PRODUCT.MIN_SEARCH_LENGTH) {
+    searchProducts(searchQuery.value)
+  }
+}
+
+const onSearchBlur = () => {
+  // Delay hiding suggestions to allow clicks
+  setTimeout(() => {
+    isSearchFocused.value = false
+    showSuggestions.value = false
+  }, TIMEOUTS.SUGGESTION_HIDE_DELAY)
 }
 
 const toggleMobileMenu = () => {
@@ -51,13 +132,26 @@ const updateWindowWidth = () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   windowWidth.value = window.innerWidth
   window.addEventListener('resize', updateWindowWidth)
+  
+  // Load categories from store if not already loaded
+  if (categoriesStore.categories.length === 0) {
+    try {
+      await categoriesStore.fetchCategories()
+    } catch (error) {
+      console.error('Failed to load categories:', error)
+      // Fallback categories will be used automatically
+    }
+  }
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateWindowWidth)
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
 })
 </script>
 
@@ -94,8 +188,8 @@ onUnmounted(() => {
       <div class="absolute inset-0 bg-gradient-to-r from-amber-50/30 via-transparent to-amber-50/30"></div>
       
       <div class="container mx-auto flex justify-between items-center px-4 relative z-10">
-        <!-- Left section - Hamburger menu -->
-        <div class="flex items-center">
+        <!-- Left section - Hamburger menu + Search -->
+        <div class="flex items-center space-x-4">
           <button 
             class="lg:hidden text-gray-700 hover:text-amber-700 focus:outline-none p-2 rounded-lg hover:bg-amber-50 transition-all duration-200" 
             @click="toggleMobileMenu" 
@@ -104,6 +198,46 @@ onUnmounted(() => {
             <Icon v-if="!isMobileMenuOpen" name="ph:list" size="28" />
             <Icon v-else name="ph:x" size="28" />
           </button>
+          
+          <!-- Desktop Search - hidden on mobile/tablet -->
+          <div class="hidden lg:block relative">
+            <div class="relative">
+              <input 
+                v-model="searchQuery" 
+                type="text" 
+                placeholder="Ürün ara..." 
+                class="w-64 xl:w-80 pl-4 pr-10 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-gray-50 hover:bg-white transition-all duration-200 text-gray-700"
+                @keyup.enter="handleSearch"
+                @focus="onSearchFocus"
+                @blur="onSearchBlur"
+              />
+              <button 
+                @click="handleSearch" 
+                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-amber-700 transition-colors duration-200"
+              >
+                <Icon v-if="!isLoadingSearch" name="ph:magnifying-glass" size="20" />
+                <Icon v-else name="ph:spinner" size="20" class="animate-spin" />
+              </button>
+            </div>
+            
+            <!-- Search Suggestions Dropdown -->
+            <div 
+              v-show="showSuggestions && searchSuggestions.length > 0"
+              class="absolute top-full left-0 right-0 bg-white shadow-xl rounded-lg border border-gray-100 mt-2 z-50 overflow-hidden"
+            >
+              <div class="py-2">
+                <div 
+                  v-for="suggestion in searchSuggestions" 
+                  :key="suggestion.id"
+                  @click="handleSuggestionClick(suggestion)"
+                  class="px-4 py-2 hover:bg-amber-50 cursor-pointer flex items-center space-x-3 transition-colors duration-200"
+                >
+                  <Icon name="ph:magnifying-glass" size="16" class="text-gray-400" />
+                  <span class="text-gray-700 hover:text-amber-700">{{ suggestion.name }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Center section - Logo -->
@@ -170,13 +304,13 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Search bar for mobile - visible only on small screens -->
-    <div class="bg-white py-2 px-4 md:hidden">
+    <!-- Search bar for mobile/tablet - visible only on small and medium screens -->
+    <div class="bg-white py-2 px-4 lg:hidden">
       <div class="relative">
         <input 
           v-model="searchQuery" 
           type="text" 
-          placeholder="Ara..." 
+          placeholder="Ürün ara..." 
           class="w-full pl-3 pr-10 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-gray-50" 
           @keyup.enter="handleSearch" 
         />

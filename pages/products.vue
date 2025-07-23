@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, watchEffect, onMounted, onUnmounted, nextTick } from 'vue'
 import { useProductsStore } from '~/stores'
+import { useProductSort } from '~/composables/useProductSort'
 import type { Product } from '~/types'
 import ProductCard from '~/components/product/ProductCard.vue'
 import ErrorMessage from '~/components/ui/UiErrorMessage.vue'
@@ -37,15 +38,8 @@ const totalPages = ref(1)
 const totalProducts = ref(0)
 const hasMoreProducts = ref(true)
 
-// Sort options - including name sorting
-const sortOptions = [
-  { label: 'En Yeniler', value: 'newest' },
-  { label: 'Fiyat (Artan)', value: 'price_asc' },
-  { label: 'Fiyat (Azalan)', value: 'price_desc' },
-  { label: 'İsim (A-Z)', value: 'name_asc' },
-  { label: 'İsim (Z-A)', value: 'name_desc' },
-]
-const selectedSort = ref('newest')
+// Sort options - using centralized composable
+const { selectedSort, sortOptions } = useProductSort()
 
 // Observer for infinite scroll
 let observer: IntersectionObserver | null = null
