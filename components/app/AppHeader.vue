@@ -267,7 +267,7 @@ onUnmounted(() => {
           <!-- Login link - shown when not authenticated -->
           <NuxtLink 
             v-else
-            to="/auth/login" 
+            to="/login" 
             class="flex items-center px-3 py-2 rounded-lg text-gray-700 hover:text-amber-700 hover:bg-amber-50 transition-all duration-200 group"
           >
             <Icon name="ph:user" size="24" class="group-hover:scale-110 transition-transform duration-200" />
@@ -421,7 +421,7 @@ onUnmounted(() => {
         <div class="p-4 border-b border-gray-100 space-y-4">
           <!-- Mobile user account/login -->
           <NuxtLink 
-            :to="authStore.isAuthenticated ? '/account' : '/auth/login'"
+            :to="authStore.isAuthenticated ? '/account' : '/login'"
             class="flex items-center space-x-3 text-gray-700 hover:text-amber-700 transition-colors p-2 rounded-lg hover:bg-amber-50"
             @click="closeMobileMenu"
           >

@@ -27,12 +27,12 @@ export default defineEventHandler(async (event) => {
     // Hash password
     const hashedPassword = await hashPassword(password)
     
-    // Create new user (default role is USER)
+    // Create new user (default role is user)
     const newUser = await UserModel.create({
       email,
       password: hashedPassword,
       name: name || undefined,
-      role: 'USER'
+      role: 'user'
     })
     
     // Generate token

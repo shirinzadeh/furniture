@@ -24,7 +24,7 @@ const defaultBanner = {
   id: 'default',
   title: 'MEBEL - Evinizi Yeniden Keşfedin',
   subtitle: 'En Kaliteli Mobilyalar, En Uygun Fiyatlarla',
-  image: '/images/placeholder.jpg',
+  image: '/images/banners/banner-1.jpg',
   link: '/products',
   isActive: true,
   order: 1,

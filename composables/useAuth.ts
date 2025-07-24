@@ -5,7 +5,7 @@ interface User {
   id: string
   email: string
   name?: string
-  role: 'USER' | 'ADMIN'
+  role: 'user' | 'admin'
 }
 
 // Create a reactive state for the current user
@@ -61,7 +61,7 @@ export function useAuth() {
   })
   
   // Computed property to check if user is admin
-  const isAdmin = computed(() => currentUser.value?.role === 'ADMIN')
+  const isAdmin = computed(() => currentUser.value?.role === 'admin')
   
   // Fetch current user data
   const fetchUser = async () => {
