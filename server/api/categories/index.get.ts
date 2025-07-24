@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
     }
     
     // Get categories with optimizations
-    let categories = await CategoryModel.find({}, projection)
+    let categories: any[] = await CategoryModel.find({}, projection)
       .sort({ name: 1 })
       .lean() // Convert to plain JS objects for better performance
     
@@ -59,15 +59,32 @@ export default defineEventHandler(async (event) => {
         }
       })
       
-      // Add _count object to each category
-      categories = categories.map(category => ({
-        ...category,
+      // Add _count object to each category and transform _id to id
+      const transformedCategories = categories.map((category): any => ({
+        id: category._id.toString(),
+        name: category.name,
+        slug: category.slug,
+        image: category.image,
+        description: category.description,
         _count: {
           products: countMap.get(category._id.toString()) || 0
         }
       }))
+      categories = transformedCategories
     }
     
+    // If product count is not requested, still transform _id to id
+    if (!includeProductCount) {
+      const transformedCategories = categories.map((category): any => ({
+        id: category._id.toString(),
+        name: category.name,
+        slug: category.slug,
+        image: category.image,
+        description: category.description
+      }))
+      categories = transformedCategories
+    }
+
     return categories
   } catch (error: any) {
     console.error('Categories fetch error:', error)

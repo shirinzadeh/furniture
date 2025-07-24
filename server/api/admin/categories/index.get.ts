@@ -61,16 +61,25 @@ export default defineEventHandler(async (event) => {
       }
     })
     
-    // Add _count object to each category
-    categories = categories.map(category => ({
-      ...category,
-      _count: {
-        products: countMap.get(category._id.toString()) || 0
+    // Add _count object to each category and transform _id to id
+    const transformedCategories = categories.map(category => {
+      const transformed: any = {
+        id: category._id.toString(),
+        name: category.name,
+        slug: category.slug,
+        description: category.description,
+        image: category.image,
+        createdAt: category.createdAt,
+        updatedAt: category.updatedAt,
+        _count: {
+          products: countMap.get(category._id.toString()) || 0
+        }
       }
-    }))
+      return transformed
+    })
 
     return {
-      categories,
+      categories: transformedCategories,
       pagination: {
         total,
         page,

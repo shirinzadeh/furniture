@@ -35,7 +35,7 @@ export function useImageUpload() {
       formData.append('file', file)
 
       // Upload to server
-      const response = await $fetch<{ statusCode: number; url?: string; message?: string }>('/api/admin/upload', {
+      const response = await $fetch<{ statusCode: number; url?: string; message?: string }>('/api/admin/images/upload', {
         method: 'POST',
         body: formData,
         credentials: 'include'
