@@ -17,6 +17,13 @@ interface ProductsState {
     totalItems: number
     totalPages: number
   }
+  // Category-specific caching
+  categoryProducts: Record<string, {
+    products: Product[]
+    totalItems: number
+    lastFetched: number
+    allLoaded: boolean
+  }>
 }
 
 // Define the store but don't export it directly
@@ -35,7 +42,8 @@ const useProductsStore = defineStore('products', {
       limit: 12,
       totalItems: 0,
       totalPages: 0
-    }
+    },
+    categoryProducts: {}
   }),
   
   getters: {
@@ -78,6 +86,48 @@ const useProductsStore = defineStore('products', {
         limit: 12,
         totalItems: 0,
         totalPages: 0
+      }
+      this.categoryProducts = {}
+    },
+
+    // Category-specific caching methods
+    getCachedCategoryProducts(categoryId: string) {
+      return this.categoryProducts[categoryId] || null
+    },
+
+    hasCachedCategoryProducts(categoryId: string, cacheTimeout = 5 * 60 * 1000) { // 5 minutes
+      const cached = this.categoryProducts[categoryId]
+      if (!cached) return false
+      
+      const now = Date.now()
+      const isExpired = now - cached.lastFetched > cacheTimeout
+      return !isExpired
+    },
+
+    setCategoryProducts(categoryId: string, products: Product[], totalItems: number, allLoaded = false) {
+      this.categoryProducts[categoryId] = {
+        products: [...products],
+        totalItems,
+        lastFetched: Date.now(),
+        allLoaded
+      }
+    },
+
+    appendCategoryProducts(categoryId: string, newProducts: Product[], totalItems: number, allLoaded = false) {
+      const existing = this.categoryProducts[categoryId]
+      if (existing) {
+        // Avoid duplicates by filtering out products that already exist
+        const existingIds = new Set(existing.products.map(p => p.id))
+        const uniqueNewProducts = newProducts.filter(p => !existingIds.has(p.id))
+        
+        this.categoryProducts[categoryId] = {
+          products: [...existing.products, ...uniqueNewProducts],
+          totalItems,
+          lastFetched: Date.now(),
+          allLoaded
+        }
+      } else {
+        this.setCategoryProducts(categoryId, newProducts, totalItems, allLoaded)
       }
     },
     

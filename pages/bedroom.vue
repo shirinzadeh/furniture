@@ -9,7 +9,7 @@ const categoriesStore = useCategoriesStore()
 
 // State for products
 const products = ref<Product[]>([])
-const isLoading = ref(true)
+const isLoading = ref(false) // Start with false, will be set based on actual need
 const isLoadingMore = ref(false)
 const error = ref<string | null>(null)
 const hasMoreProducts = ref(true)
@@ -44,6 +44,35 @@ const fetchCategoryAndProducts = async (isLoadMore = false) => {
   if (isLoadMore) {
     isLoadingMore.value = true
   } else {
+    // First fetch categories if they're not already loaded
+    if (categoriesStore.categories.length === 0) {
+      isLoading.value = true
+      await categoriesStore.fetchCategories()
+    }
+    
+    // Set categoryId for filtering products
+    if (category.value) {
+      categoryId.value = category.value.id?.toString() || null
+      console.log('Bedroom category found:', category.value.name, 'ID:', categoryId.value)
+    } else {
+      console.log('Bedroom category not found')
+      return
+    }
+    
+    // Check if we have cached products for this category
+    if (categoryId.value && productsStore.hasCachedCategoryProducts(categoryId.value)) {
+      const cached = productsStore.getCachedCategoryProducts(categoryId.value)
+      if (cached) {
+        products.value = [...cached.products]
+        totalProducts.value = cached.totalItems
+        hasMoreProducts.value = !cached.allLoaded
+        console.log(`Using cached bedroom products: ${products.value.length}/${totalProducts.value}`)
+        isLoading.value = false
+        return
+      }
+    }
+    
+    // Show loading only if we need to fetch new data
     isLoading.value = true
     page.value = 1
     products.value = []
@@ -52,43 +81,39 @@ const fetchCategoryAndProducts = async (isLoadMore = false) => {
   error.value = null
   
   try {
-    // First fetch categories if they're not already loaded
-    if (categoriesStore.categories.length === 0) {
-      await categoriesStore.fetchCategories()
-    }
-    
-    // Set categoryId for filtering products
-    if (category.value) {
-      categoryId.value = category.value._id?.toString() || null
-      console.log('Bedroom category found:', category.value.name, 'ID:', categoryId.value)
-    } else {
-      console.log('Bedroom category not found')
-    }
+    if (!categoryId.value) return
     
     // Use useApi for consistent API calls
     const api = useApi()
     const queryParams = new URLSearchParams({
       page: page.value.toString(),
-      limit: limit.value.toString()
-    });
-    
-    if (categoryId.value) {
-      queryParams.append('categoryId', categoryId.value);
-    }
+      limit: limit.value.toString(),
+      categoryId: categoryId.value
+    })
     
     const response = await api.fetchRaw(`/api/products?${queryParams.toString()}`)
     
     if (response) {
       const newProducts = response.products || []
+      const responseTotal = response.pagination?.totalItems || 0
       
       if (isLoadMore) {
-        // Force reactivity update by creating new array reference
+        // Append to existing products
         products.value = [...products.value, ...newProducts]
+        
+        // Update cache with appended products
+        const allLoaded = products.value.length >= responseTotal
+        productsStore.appendCategoryProducts(categoryId.value, newProducts, responseTotal, allLoaded)
       } else {
+        // Set initial products
         products.value = [...newProducts]
+        
+        // Cache the products
+        const allLoaded = newProducts.length >= responseTotal
+        productsStore.setCategoryProducts(categoryId.value, newProducts, responseTotal, allLoaded)
       }
       
-      totalProducts.value = response.pagination?.totalItems || 0
+      totalProducts.value = responseTotal
       hasMoreProducts.value = products.value.length < totalProducts.value
       
       console.log(`Loaded ${newProducts.length} bedroom products, total: ${products.value.length}/${totalProducts.value}`)
