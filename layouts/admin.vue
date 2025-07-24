@@ -191,10 +191,10 @@ const mobileMenuOpen = ref(false)
 const logout = async () => {
   await authLogout()
   
-  toast.showToast({
-    message: 'Logged out successfully',
-    type: 'success'
-  })
+  toast.success(
+    'Çıkış Yapıldı',
+    'Çıkış yapıldı'
+  )
 }
 
 // Get icon based on toast type

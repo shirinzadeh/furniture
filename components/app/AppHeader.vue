@@ -348,14 +348,7 @@ onUnmounted(() => {
               </NuxtLink>
             </div>
           </li>
-          <li class="py-4">
-            <NuxtLink 
-              to="/living-room" 
-              class="text-gray-700 hover:text-amber-700 transition-colors font-medium"
-            >
-              OTURMA ODASI
-            </NuxtLink>
-          </li>
+     
           <li class="py-4">
             <NuxtLink 
               to="/bedroom" 
@@ -506,15 +499,7 @@ onUnmounted(() => {
                 </li>
               </ul>
             </li>
-            <li>
-              <NuxtLink 
-                to="/living-room" 
-                class="block py-2 text-gray-700 hover:text-amber-700 transition-colors font-medium" 
-                @click="closeMobileMenu"
-              >
-                OTURMA ODASI
-              </NuxtLink>
-            </li>
+           
             <li>
               <NuxtLink 
                 to="/bedroom" 

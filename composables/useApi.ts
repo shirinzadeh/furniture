@@ -1,7 +1,7 @@
 import type { UseFetchOptions } from 'nuxt/app'
 import type { FetchError } from 'ofetch'
 import type { FetchContext, FetchResponse } from 'ofetch'
-import { unref, ref } from 'vue'
+import { unref, ref, readonly, watchEffect, onUnmounted, nextTick } from 'vue'
 import { useAdminStore } from '~/stores'
 import { useToast } from '~/composables/useToast'
 
@@ -14,6 +14,13 @@ export type ApiError = {
 export type ApiOptions<T> = Omit<UseFetchOptions<T>, 'headers'> & {
   showError?: boolean
   headers?: Record<string, string>
+}
+
+export type LazyOptions<T> = ApiOptions<T> & {
+  immediate?: boolean
+  trigger?: 'visible' | 'manual' | 'hover'
+  threshold?: number
+  rootMargin?: string
 }
 
 // Global state for API operations
@@ -101,13 +108,6 @@ export function useApi() {
         return apiError
       }
     }
-
-    // You can integrate with a toast notification system if available
-    // Example implementation with a toast system:
-    // if (showError && import.meta.client) {
-    //   const { $toast } = useNuxtApp()
-    //   if ($toast) $toast.error(message)
-    // }
 
     return apiError
   }
@@ -278,10 +278,215 @@ export function useApi() {
     }
   }
 
+  // Lazy fetch with intersection observer
+  const apiLazyFetch = <T>(url: string, options: LazyOptions<T> = {}) => {
+    const { 
+      immediate = false, 
+      trigger = 'visible',
+      threshold = 0.1,
+      rootMargin = '50px',
+      showError = true,
+      ...fetchOptions 
+    } = options
+    
+    const requestKey = getRequestKey(url, options)
+    const data = ref<T | null>(null)
+    const pending = ref(false)
+    const error = ref<ApiError | null>(null)
+    const executed = ref(false)
+    
+    // Create trigger element ref for intersection observer
+    const triggerRef = ref<HTMLElement>()
+    
+    // Execute the fetch
+    const execute = async (): Promise<T | null> => {
+      if (executed.value || pending.value) return data.value
+      
+      pending.value = true
+      error.value = null
+      executed.value = true
+      
+      try {
+        const result = await apiFetchRaw<T>(url, { showError, ...fetchOptions })
+        data.value = result
+        return result
+      } catch (err) {
+        error.value = err as ApiError
+        throw err
+      } finally {
+        pending.value = false
+      }
+    }
+    
+    // Setup intersection observer for 'visible' trigger
+    if (trigger === 'visible' && import.meta.client) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && !executed.value) {
+              execute()
+              observer.disconnect()
+            }
+          })
+        },
+        { threshold, rootMargin }
+      )
+      
+      watchEffect(() => {
+        if (triggerRef.value) {
+          observer.observe(triggerRef.value)
+        }
+      })
+      
+      onUnmounted(() => {
+        observer.disconnect()
+      })
+    }
+    
+    // Execute immediately if requested
+    if (immediate) {
+      nextTick(() => execute())
+    }
+    
+    return {
+      data: readonly(data),
+      pending: readonly(pending),
+      error: readonly(error),
+      executed: readonly(executed),
+      execute,
+      triggerRef,
+      refresh: () => {
+        executed.value = false
+        return execute()
+      }
+    }
+  }
+
+  // Lazy async data with intersection observer
+  const apiLazyAsyncData = <T>(
+    key: string,
+    apiFn: () => Promise<T>,
+    options: LazyOptions<T> = {}
+  ) => {
+    const { 
+      immediate = false, 
+      trigger = 'visible',
+      threshold = 0.1,
+      rootMargin = '50px',
+      showError = true,
+      ...asyncOptions 
+    } = options
+    
+    const data = ref<T | null>(null)
+    const pending = ref(false)
+    const error = ref<ApiError | null>(null)
+    const executed = ref(false)
+    
+    // Create trigger element ref for intersection observer
+    const triggerRef = ref<HTMLElement>()
+    
+    // Execute the async data fetch
+    const execute = async (): Promise<T | null> => {
+      if (executed.value || pending.value) return data.value
+      
+      pending.value = true
+      error.value = null
+      executed.value = true
+      
+      trackRequestStart(key)
+      
+      try {
+        const result = await apiFn()
+        data.value = result
+        return result
+      } catch (err) {
+        const apiError = handleError(err as FetchError, key, showError)
+        error.value = apiError
+        throw apiError
+      } finally {
+        pending.value = false
+        trackRequestEnd(key)
+      }
+    }
+    
+    // Setup intersection observer for 'visible' trigger
+    if (trigger === 'visible' && import.meta.client) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && !executed.value) {
+              execute()
+              observer.disconnect()
+            }
+          })
+        },
+        { threshold, rootMargin }
+      )
+      
+      watchEffect(() => {
+        if (triggerRef.value) {
+          observer.observe(triggerRef.value)
+        }
+      })
+      
+      onUnmounted(() => {
+        observer.disconnect()
+      })
+    }
+    
+    // Execute immediately if requested
+    if (immediate) {
+      nextTick(() => execute())
+    }
+    
+    return {
+      data: readonly(data),
+      pending: readonly(pending),
+      error: readonly(error),
+      executed: readonly(executed),
+      execute,
+      triggerRef,
+      refresh: () => {
+        executed.value = false
+        return execute()
+      }
+    }
+  }
+
+  // Prefetch function for better performance
+  const apiPrefetch = <T>(url: string, options: ApiOptions<T> = {}) => {
+    const requestKey = getRequestKey(url, options)
+    
+    // Only prefetch if not already cached
+    if (import.meta.client) {
+      const headers = {
+        ...defaultHeaders,
+        ...getAuthHeaders(),
+        ...(options.headers || {})
+      }
+      
+      // Use link prefetch for better performance
+      const link = document.createElement('link')
+      link.rel = 'prefetch'
+      link.href = `${getBaseURL()}${url}`
+      document.head.appendChild(link)
+      
+      // Clean up after 5 seconds
+      setTimeout(() => {
+        if (link.parentNode) {
+          link.parentNode.removeChild(link)
+        }
+      }, 5000)
+    }
+  }
+
   return {
     fetch: apiFetch,
     asyncData: apiAsyncData,
     fetchRaw: apiFetchRaw,
+    lazyFetch: apiLazyFetch,
+    lazyAsyncData: apiLazyAsyncData,
+    prefetch: apiPrefetch,
     handleError,
     clearErrors,
     clearError,

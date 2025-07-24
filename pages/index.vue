@@ -1,514 +1,501 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watch, nextTick } from 'vue'
-import type { Product, Category } from '~/types'
+import type { Product } from '~/types'
 import { Swiper, SwiperSlide } from 'swiper/vue'
-import ProductCard from '~/components/product/ProductCard.vue'
-import Button from '~/components/ui/UiButton.vue'
-import FurnitureLoader from '~/components/ui/FurnitureLoader.vue'
+import { Autoplay, Navigation, Pagination } from 'swiper/modules'
+// Import Swiper styles
+import 'swiper/css'
+import 'swiper/css/navigation'
+import 'swiper/css/pagination'
 
-// Import Pinia stores
+// SEO Meta
+useHead({
+  title: 'MEBEL - Evinizi Yeniden Keşfedin',
+  meta: [
+    { name: 'description', content: 'Kaliteli mobilyalar ve dekorasyon ürünleri ile evinizi yeniden keşfedin. En uygun fiyatlarla yatak odası, oturma odası, mutfak ve ofis mobilyaları.' }
+  ]
+})
+
+// Stores
 const productsStore = useProductsStore()
 const categoriesStore = useCategoriesStore()
 
-// Page loading states
-const isPageLoading = ref(true)
-const loadingProgress = ref(0)
-const loadingStep = ref(1)
+// API composable
+const api = useApi()
 
-// State for winter flash sale products
-const winterFlashSaleProducts = ref<Product[]>([])
-const isLoadingWinterSale = ref(true)
-const winterSaleError = ref<string | null>(null)
-const retryCount = ref(0)
-const maxRetries = 3
+// Swiper modules
+const swiperModules = [Autoplay, Navigation, Pagination]
 
-// State for bestseller products
-const bestsellerProducts = ref<Product[]>([])
-const isLoadingBestsellers = ref(true)
-const bestsellersError = ref<string | null>(null)
-const bestsellerRetryCount = ref(0)
-
-// State for recommended products
-const recommendedProducts = ref<Product[]>([])
-const isLoadingRecommended = ref(true)
-const recommendedError = ref<string | null>(null)
-const recommendedRetryCount = ref(0)
-
-// Add retry flags
-const shouldRetryBestsellers = ref(false)
-const shouldRetryRecommended = ref(false)
-const shouldRetryWinterSale = ref(false)
-
-// Watch for retry flags
-watch(shouldRetryBestsellers, (shouldRetry) => {
-  if (shouldRetry) {
-    // Reset the flag
-    shouldRetryBestsellers.value = false
-    // Wait a bit before retrying
-    setTimeout(() => {
-      // This is safe because we're not calling any Nuxt composables directly in the callback
-      fetchBestsellerProducts()
-    }, 1000)
-  }
+// Initialize essential data immediately (non-blocking)
+onMounted(async () => {
+  // Prefetch critical resources
+  api.prefetch('/products', { params: { featured: true, limit: 8 } })
+  api.prefetch('/categories')
+  
+  // Load essential data in background
+  Promise.all([
+    productsStore.fetchFeaturedProducts(8),
+    categoriesStore.fetchCategories()
+  ]).catch(console.error)
 })
 
-watch(shouldRetryRecommended, (shouldRetry) => {
-  if (shouldRetry) {
-    // Reset the flag
-    shouldRetryRecommended.value = false
-    // Wait a bit before retrying
-    setTimeout(() => {
-      // This is safe because we're not calling any Nuxt composables directly in the callback
-      fetchRecommendedProducts()
-    }, 1000)
+// Lazy load winter flash sale products
+const {
+  data: winterFlashSaleProducts,
+  pending: isLoadingWinterSale,
+  error: winterSaleError,
+  execute: executeWinterSale,
+  triggerRef: winterSaleRef,
+  refresh: refreshWinterSale
+} = api.lazyAsyncData(
+  'winter-flash-sale',
+  () => productsStore.fetchSaleProducts(8),
+  { 
+    trigger: 'visible',
+    threshold: 0.1,
+    rootMargin: '100px',
+    immediate: false
   }
-})
+)
 
-watch(shouldRetryWinterSale, (shouldRetry) => {
-  if (shouldRetry) {
-    // Reset the flag
-    shouldRetryWinterSale.value = false
-    // Wait a bit before retrying
-    setTimeout(() => {
-      // This is safe because we're not calling any Nuxt composables directly in the callback
-      fetchWinterFlashSaleProducts()
-    }, 1000)
+// Lazy load bestseller products
+const {
+  data: bestsellerProducts,
+  pending: isLoadingBestsellers,
+  error: bestsellersError,
+  execute: executeBestsellers,
+  triggerRef: bestsellersRef,
+  refresh: refreshBestsellers
+} = api.lazyAsyncData(
+  'bestsellers',
+  () => productsStore.fetchBestsellerProducts(12), // More products for swiper
+  { 
+    trigger: 'visible',
+    threshold: 0.1,
+    rootMargin: '100px',
+    immediate: false
   }
-})
+)
 
-// Fetch winter flash sale products with retry mechanism
-const fetchWinterFlashSaleProducts = async () => {
-  isLoadingWinterSale.value = true
-  winterSaleError.value = null
-  
-  try {
-    // Use the dedicated method for fetching sale products
-    const response = await productsStore.fetchSaleProducts(8)
-    
-    if (response) {
-      // Use the saleProducts from the store
-      winterFlashSaleProducts.value = productsStore.saleProducts
-      
-      // If no products found but we have retries left, try again
-      if (winterFlashSaleProducts.value.length === 0 && retryCount.value < maxRetries) {
-        retryCount.value++
-        console.log(`No winter flash sale products found, retrying (${retryCount.value}/${maxRetries})`)
-        // Clear cache before retrying
-        productsStore.clearCache()
-        // Instead of setTimeout, use a flag and watch
-        shouldRetryWinterSale.value = true
-        return
-      }
-    }
-  } catch (err) {
-    winterSaleError.value = 'Flaş indirim ürünleri yüklenirken bir hata oluştu.'
-    console.error('Error fetching winter flash sale products:', err)
-    
-    // Retry on error if we have retries left
-    if (retryCount.value < maxRetries) {
-      retryCount.value++
-      console.log(`Error fetching winter flash sale products, retrying (${retryCount.value}/${maxRetries})`)
-      // Clear cache before retrying
-      productsStore.clearCache()
-      // Instead of setTimeout, use a flag and watch
-      shouldRetryWinterSale.value = true
-      return
-    }
-  } finally {
-    isLoadingWinterSale.value = false
+// Lazy load recommended products
+const {
+  data: recommendedProducts,
+  pending: isLoadingRecommended,
+  error: recommendedError,
+  execute: executeRecommended,
+  triggerRef: recommendedRef,
+  refresh: refreshRecommended
+} = api.lazyAsyncData(
+  'recommended',
+  () => productsStore.fetchRecommendedProducts('8'),
+  { 
+    trigger: 'visible',
+    threshold: 0.1,
+    rootMargin: '100px',
+    immediate: false
   }
+)
+
+// Error message computed
+const errorMessage = computed(() => productsStore.error || categoriesStore.error)
+
+// Manual execution functions for retry
+const retryWinterSale = () => {
+  refreshWinterSale()
 }
 
-// Fetch bestseller products with retry mechanism
-const fetchBestsellerProducts = async () => {
-  isLoadingBestsellers.value = true
-  bestsellersError.value = null
-  
-  try {
-    // Use the dedicated method for fetching bestseller products
-    const response = await productsStore.fetchBestsellerProducts(8)
-    
-    if (response) {
-      // Use the bestsellerProducts from the store
-      bestsellerProducts.value = productsStore.bestsellerProducts
-      
-      // If no products found but we have retries left, try again
-      if (bestsellerProducts.value.length === 0 && bestsellerRetryCount.value < maxRetries) {
-        bestsellerRetryCount.value++
-        console.log(`No bestseller products found, retrying (${bestsellerRetryCount.value}/${maxRetries})`)
-        // Clear cache before retrying
-        productsStore.clearCache()
-        // Instead of setTimeout, use a flag and onMounted
-        shouldRetryBestsellers.value = true
-        return
-      }
-    }
-  } catch (err) {
-    bestsellersError.value = 'Çok satan ürünler yüklenirken bir hata oluştu.'
-    console.error('Error fetching bestseller products:', err)
-    
-    // Retry on error if we have retries left
-    if (bestsellerRetryCount.value < maxRetries) {
-      bestsellerRetryCount.value++
-      console.log(`Error fetching bestseller products, retrying (${bestsellerRetryCount.value}/${maxRetries})`)
-      // Clear cache before retrying
-      productsStore.clearCache()
-      // Instead of setTimeout, use a flag and onMounted
-      shouldRetryBestsellers.value = true
-      return
-    }
-  } finally {
-    isLoadingBestsellers.value = false
-  }
+const retryBestsellers = () => {
+  refreshBestsellers()
 }
 
-// Fetch recommended products with retry mechanism
-const fetchRecommendedProducts = async () => {
-  isLoadingRecommended.value = true
-  recommendedError.value = null
-  
-  try {
-    // Use the dedicated method for fetching recommended products
-    const response = await productsStore.fetchRecommendedProducts('10')
-    
-    if (response) {
-      // Use the recommendedProducts from the store
-      recommendedProducts.value = productsStore.recommendedProducts
-      
-      // If no products found but we have retries left, try again
-      if (recommendedProducts.value.length === 0 && recommendedRetryCount.value < maxRetries) {
-        recommendedRetryCount.value++
-        console.log(`No recommended products found, retrying (${recommendedRetryCount.value}/${maxRetries})`)
-        // Clear cache before retrying
-        productsStore.clearCache()
-        // Instead of setTimeout, use a flag and onMounted
-        shouldRetryRecommended.value = true
-        return
-      }
-    }
-  } catch (err) {
-    recommendedError.value = 'Önerilen ürünler yüklenirken bir hata oluştu.'
-    console.error('Error fetching recommended products:', err)
-    
-    // Retry on error if we have retries left
-    if (recommendedRetryCount.value < maxRetries) {
-      recommendedRetryCount.value++
-      console.log(`Error fetching recommended products, retrying (${recommendedRetryCount.value}/${maxRetries})`)
-      // Clear cache before retrying
-      productsStore.clearCache()
-      // Instead of setTimeout, use a flag and onMounted
-      shouldRetryRecommended.value = true
-      return
-    }
-  } finally {
-    isLoadingRecommended.value = false
-  }
+const retryRecommended = () => {
+  refreshRecommended()
 }
 
-// Computed property for combined error message
-const errorMessage = computed(() => {
-  if (productsStore.error && categoriesStore.error) {
-    return 'Veritabanına bağlanırken bir sorun oluştu. Lütfen daha sonra tekrar deneyin.'
-  }
-  if (productsStore.error) {
-    return 'Ürünler yüklenirken bir sorun oluştu. Lütfen daha sonra tekrar deneyin.'
-  }
-  if (categoriesStore.error) {
-    return 'Kategoriler yüklenirken bir sorun oluştu. Lütfen daha sonra tekrar deneyin.'
-  }
-  return null
-})
-
-// Handle add to favorites for featured products
-const handleAddToFavorites = (productId: string) => {
-  // This would typically use a store action
-  console.log('Add to favorites:', productId)
+// Add to cart function
+const addToCart = (productId: string) => {
+  console.log('Sepete ekle:', productId)
 }
-
-// Handle add to cart for featured products
-const handleAddToCart = (productId: string) => {
-  // This would typically use a store action
-  console.log('Add to cart:', productId)
-}
-
-
-
-// Fetch data on page load with error handling
-try {
-  await Promise.all([
-    productsStore.fetchFeaturedProducts().catch(e => {
-      console.error('Error fetching featured products:', e);
-      return [];
-    }),
-    categoriesStore.fetchCategories().catch(e => {
-      console.error('Error fetching categories:', e);
-      return [];
-    }),
-    fetchWinterFlashSaleProducts().catch(e => {
-      console.error('Error fetching winter flash sale products:', e);
-      return [];
-    }),
-    fetchBestsellerProducts().catch(e => {
-      console.error('Error fetching bestseller products:', e);
-      return [];
-    }), 
-    fetchRecommendedProducts().catch(e => {
-      console.error('Error fetching recommended products:', e);
-      return [];
-    })
-  ]);
-} catch (error) {
-  console.error('Error fetching data:', error);
-}
-
-// Ensure we always have arrays to render, even if empty
-productsStore.ensureArraysInitialized();
-
-// Initialize local data arrays if undefined
-if (!winterFlashSaleProducts.value) winterFlashSaleProducts.value = [];
-if (!bestsellerProducts.value) bestsellerProducts.value = [];
-if (!recommendedProducts.value) recommendedProducts.value = [];
-
-// Track loading states of all sections
-const allSectionsLoaded = computed(() => {
-  return !isLoadingWinterSale.value && 
-         !isLoadingBestsellers.value && 
-         !isLoadingRecommended.value &&
-         !productsStore.loading &&
-         !categoriesStore.loading
-})
-
-// Update loading progress based on completed sections
-const updateLoadingProgress = () => {
-  let completed = 0
-  let total = 5 // Total number of loading sections
-  
-  if (!productsStore.loading) completed++
-  if (!categoriesStore.loading) completed++
-  if (!isLoadingWinterSale.value) completed++
-  if (!isLoadingBestsellers.value) completed++
-  if (!isLoadingRecommended.value) completed++
-  
-  loadingProgress.value = (completed / total) * 100
-  
-  // Update loading step
-  if (completed >= 1) loadingStep.value = 2
-  if (completed >= 3) loadingStep.value = 3
-  if (completed >= 5) loadingStep.value = 4
-}
-
-// Watch for loading state changes
-watch([
-  () => productsStore.loading,
-  () => categoriesStore.loading,
-  isLoadingWinterSale,
-  isLoadingBestsellers,
-  isLoadingRecommended
-], () => {
-  updateLoadingProgress()
-  
-  // Hide page loading when all sections are loaded
-  if (allSectionsLoaded.value) {
-    setTimeout(() => {
-      isPageLoading.value = false
-    }, 500) // Small delay for smooth transition
-  }
-}, { immediate: true })
-
-// Also add a fallback timeout to ensure loader doesn't stay forever
-setTimeout(() => {
-  if (isPageLoading.value) {
-    console.log('Forcing loader to hide after timeout')
-    isPageLoading.value = false
-  }
-}, 10000) // 10 seconds maximum
-
-// Initialize on mount
-onMounted(() => {
-  updateLoadingProgress()
-  
-  // Quick check if everything is already loaded
-  nextTick(() => {
-    if (allSectionsLoaded.value) {
-      setTimeout(() => {
-        isPageLoading.value = false
-      }, 1000) // Give it 1 second then hide
-    }
-  })
-  
-  // Debug loading states
-  console.log('Loading states on mount:', {
-    productsLoading: productsStore.loading,
-    categoriesLoading: categoriesStore.loading,
-    winterSaleLoading: isLoadingWinterSale.value,
-    bestsellersLoading: isLoadingBestsellers.value,
-    recommendedLoading: isLoadingRecommended.value,
-    allLoaded: allSectionsLoaded.value
-  })
-})
 </script>
 
 <template>
   <div>
-    <!-- Creative Loading Screen -->
-    <FurnitureLoader 
-      v-if="isPageLoading"
-      :progress="loadingProgress"
-      :current-step="loadingStep"
-      class="furniture-loader-transition"
-    />
+    <!-- Hero Banner - Always visible immediately -->
+    <HeroBanner />
     
-    <!-- Main Content -->
-    <Transition name="page-fade" appear>
-      <div v-if="!isPageLoading" class="page-content">
-        <!-- Hero Banner -->
-        <HeroBanner />
+    <!-- Winter Flash Sale Section - Lazy loaded -->
+    <section ref="winterSaleRef" class="py-16 bg-gradient-to-br from-red-50 via-orange-50 to-amber-50">
+      <div class="container mx-auto px-4">
+        <div class="text-center mb-12">
+          <h2 class="text-4xl font-bold text-gray-900 mb-3">❄️ KIŞ FLASH İNDİRİMLERİ</h2>
+          <p class="text-xl text-gray-600">Kış indirimleri başladı! Sınırlı süre fırsatları kaçırmayın.</p>
+        </div>
+        
+        <!-- Loading skeleton -->
+        <div v-if="isLoadingWinterSale" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div v-for="i in 8" :key="i" class="bg-white rounded-2xl shadow-sm overflow-hidden animate-pulse">
+            <div class="h-48 bg-gray-200"></div>
+            <div class="p-6 space-y-3">
+              <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+              <div class="h-6 bg-gray-200 rounded w-1/3"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Error state -->
+        <div v-else-if="winterSaleError" class="text-center py-12">
+          <div class="max-w-md mx-auto">
+            <Icon name="ph:warning-circle" class="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <p class="text-red-600 mb-6 text-lg">{{ winterSaleError.message }}</p>
+            <UiButton @click="retryWinterSale" variant="danger" size="lg">
+              Tekrar Dene
+            </UiButton>
+          </div>
+        </div>
+        
+        <!-- Empty state -->
+        <div v-else-if="winterFlashSaleProducts && winterFlashSaleProducts.length === 0" class="text-center py-12">
+          <Icon name="ph:snowflake" class="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <p class="text-gray-500 text-lg">Şu anda indirimli ürün bulunmamaktadır.</p>
+        </div>
+        
+        <!-- Products grid -->
+        <div v-else-if="winterFlashSaleProducts" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <ProductCard
+            v-for="product in winterFlashSaleProducts"
+            :key="String(product._id)"
+            :product="product as Product"
+            show-sale-badge
+            @add-to-cart="addToCart"
+          />
+        </div>
+        
+        <!-- View all button -->
+        <div v-if="winterFlashSaleProducts && winterFlashSaleProducts.length > 0" class="text-center">
+          <UiButton to="/winter-flash-sales" variant="primary" size="lg" rounded class="px-10">
+            Tüm İndirimleri Gör
+            <Icon name="ph:arrow-right" class="ml-2" />
+          </UiButton>
+        </div>
+      </div>
+    </section>
     
-    <!-- Winter Flash Sale Section -->
-    <ProductWinterFlashSale 
-      :external-products="winterFlashSaleProducts"
-      :external-loading="isLoadingWinterSale"
-      :external-error="winterSaleError"
-    />
-    
-    <!-- Featured Categories -->
+    <!-- Featured Categories - Load immediately -->
     <CategoriesFeatured
       :categories="categoriesStore.categories"
       :loading="categoriesStore.loading"
       :error="errorMessage"
     />
     
-    <!-- Featured Products -->
-    <section class="py-12 bg-gray-50">
+    <!-- Featured Products Section - Load immediately -->
+    <section class="py-16 bg-white">
       <div class="container mx-auto px-4">
-        <h2 class="text-3xl font-bold text-center mb-8">Öne Çıkan Ürünler</h2>
+        <div class="text-center mb-12">
+          <h2 class="text-4xl font-bold text-gray-900 mb-3">⭐ Öne Çıkan Ürünler</h2>
+          <p class="text-xl text-gray-600">En popüler ve kaliteli mobilyalarımız</p>
+        </div>
         
+        <!-- Loading skeleton -->
         <div v-if="productsStore.loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div v-for="i in 8" :key="i" class="bg-gray-200 animate-pulse rounded-lg h-80"></div>
+          <div v-for="i in 8" :key="i" class="bg-white rounded-2xl shadow-sm overflow-hidden animate-pulse border">
+            <div class="h-48 bg-gray-200"></div>
+            <div class="p-6 space-y-3">
+              <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+              <div class="h-6 bg-gray-200 rounded w-1/3"></div>
+            </div>
+          </div>
         </div>
         
-        <div v-else-if="errorMessage" class="text-center text-red-500 py-8">
-          {{ errorMessage }}
+        <!-- Error state -->
+        <div v-else-if="errorMessage" class="text-center py-12">
+          <div class="max-w-md mx-auto">
+            <Icon name="ph:warning-circle" class="w-12 h-12 text-amber-500 mx-auto mb-4" />
+            <p class="text-amber-600 mb-6 text-lg">{{ errorMessage }}</p>
+            <UiButton @click="productsStore.fetchFeaturedProducts(8)" variant="secondary" size="lg">
+              Tekrar Dene
+            </UiButton>
+          </div>
         </div>
         
-        <div v-else-if="productsStore.featuredProducts.length === 0" class="text-center text-gray-500 py-8">
-          Henüz ürün bulunmamaktadır.
+        <!-- Empty state -->
+        <div v-else-if="productsStore.featuredProducts.length === 0" class="text-center py-12">
+          <Icon name="ph:package" class="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <p class="text-gray-500 text-lg">Henüz ürün bulunmamaktadır.</p>
         </div>
         
-        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <ProductCard 
-            v-for="product in productsStore.featuredProducts" 
-            :key="product.id" 
+        <!-- Products grid -->
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <ProductCard
+            v-for="product in productsStore.featuredProducts"
+            :key="String(product._id)"
             :product="product"
-            @add-to-favorites="handleAddToFavorites"
-            @add-to-cart="handleAddToCart"
+            @add-to-cart="addToCart"
           />
         </div>
         
-        <div class="text-center mt-8">
-          <Button 
-            to="/products" 
-            variant="secondary"
-          >
+        <!-- View all button -->
+        <div v-if="productsStore.featuredProducts.length > 0" class="text-center">
+          <UiButton to="/products" variant="secondary" size="lg" rounded class="px-10">
             Tüm Ürünleri Gör
-          </Button>
+            <Icon name="ph:arrow-right" class="ml-2" />
+          </UiButton>
         </div>
       </div>
     </section>
     
-    <!-- Features -->
-    <section class="py-12 bg-white">
+    <!-- Services Section -->
+    <section class="py-16 bg-gradient-to-br from-gray-50 to-amber-50">
       <div class="container mx-auto px-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div class="text-center">
-            <div class="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Icon name="mdi:truck-delivery" class="w-8 h-8 text-gray-800" />
+          <div class="text-center group">
+            <div class="bg-white w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300">
+              <Icon name="mdi:truck-delivery" class="w-10 h-10 text-amber-600" />
             </div>
-            <h3 class="text-xl font-bold mb-2">Hızlı Teslimat</h3>
-            <p class="text-gray-600">Siparişleriniz en kısa sürede adresinize teslim edilir.</p>
+            <h3 class="text-2xl font-bold mb-3 text-gray-900">Hızlı Teslimat</h3>
+            <p class="text-gray-600 text-lg">Siparişleriniz en kısa sürede adresinize teslim edilir.</p>
           </div>
           
-          <div class="text-center">
-            <div class="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Icon name="mdi:credit-card" class="w-8 h-8 text-gray-800" />
+          <div class="text-center group">
+            <div class="bg-white w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300">
+              <Icon name="mdi:credit-card" class="w-10 h-10 text-amber-600" />
             </div>
-            <h3 class="text-xl font-bold mb-2">Güvenli Ödeme</h3>
-            <p class="text-gray-600">Tüm ödemeleriniz güvenli bir şekilde gerçekleştirilir.</p>
+            <h3 class="text-2xl font-bold mb-3 text-gray-900">Güvenli Ödeme</h3>
+            <p class="text-gray-600 text-lg">Tüm ödemeleriniz güvenli bir şekilde gerçekleştirilir.</p>
           </div>
           
-          <div class="text-center">
-            <div class="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Icon name="mdi:headset" class="w-8 h-8 text-gray-800" />
+          <div class="text-center group">
+            <div class="bg-white w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300">
+              <Icon name="mdi:headset" class="w-10 h-10 text-amber-600" />
             </div>
-            <h3 class="text-xl font-bold mb-2">7/24 Destek</h3>
-            <p class="text-gray-600">Sorularınız için müşteri hizmetlerimiz her zaman yanınızda.</p>
+            <h3 class="text-2xl font-bold mb-3 text-gray-900">7/24 Destek</h3>
+            <p class="text-gray-600 text-lg">Sorularınız için müşteri hizmetlerimiz her zaman yanınızda.</p>
           </div>
         </div>
       </div>
     </section>
     
-    <!-- Winter Flash Price Section -->
-    <ProductWinterFlashPrice 
-      :external-products="winterFlashSaleProducts"
-      :external-loading="isLoadingWinterSale"
-      :external-error="winterSaleError"
-    />
-    
-    <!-- Recommended Products Section -->
-    <ProductRecommended 
-      :external-products="recommendedProducts"
-      :external-loading="isLoadingRecommended"
-      :external-error="recommendedError"
-    />
-    
-    <!-- Season Bestsellers Section -->
-    <ProductSeasonBestSeller
-      :products="bestsellerProducts"
-      :loading="isLoadingBestsellers"
-      :error="bestsellersError"
-      title="SEZONUN ÇOK SATANLARI"
-      subtitle="Bu sezonun en çok tercih edilen ürünleri"
-      view-all-link="/bestsellers"
-      view-all-text="Tümünü Gör"
-      background-color="bg-amber-50"
-    />
+    <!-- Recommended Products Section - Lazy loaded -->
+    <section ref="recommendedRef" class="py-16 bg-gradient-to-br from-amber-50 to-orange-50">
+      <div class="container mx-auto px-4">
+        <div class="text-center mb-12">
+          <h2 class="text-4xl font-bold text-gray-900 mb-3">💡 Size Özel Öneriler</h2>
+          <p class="text-xl text-gray-600">Seçimlerinize göre özenle seçilmiş ürünler</p>
+        </div>
+        
+        <!-- Loading skeleton -->
+        <div v-if="isLoadingRecommended" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div v-for="i in 8" :key="i" class="bg-white rounded-2xl shadow-sm overflow-hidden animate-pulse">
+            <div class="h-48 bg-gray-200"></div>
+            <div class="p-6 space-y-3">
+              <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+              <div class="h-6 bg-gray-200 rounded w-1/3"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Error state -->
+        <div v-else-if="recommendedError" class="text-center py-12">
+          <div class="max-w-md mx-auto">
+            <Icon name="ph:warning-circle" class="w-12 h-12 text-amber-500 mx-auto mb-4" />
+            <p class="text-amber-600 mb-6 text-lg">{{ recommendedError.message }}</p>
+            <UiButton @click="retryRecommended" variant="primary" size="lg">
+              Tekrar Dene
+            </UiButton>
+          </div>
+        </div>
+        
+        <!-- Empty state -->
+        <div v-else-if="recommendedProducts && recommendedProducts.length === 0" class="text-center py-12">
+          <Icon name="ph:lightbulb" class="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <p class="text-gray-500 text-lg">Şu anda önerilecek ürün bulunmamaktadır.</p>
+        </div>
+        
+        <!-- Products grid -->
+        <div v-else-if="recommendedProducts" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <ProductCard
+            v-for="product in recommendedProducts"
+            :key="String(product._id)"
+            :product="product as Product"
+            @add-to-cart="addToCart"
+          />
+        </div>
       </div>
-    </Transition>
+    </section>
+    
+    <!-- Season Bestsellers Section - Lazy loaded with Swiper -->
+    <section ref="bestsellersRef" class="py-16 bg-white">
+      <div class="container mx-auto px-4">
+        <div class="text-center mb-12">
+          <h2 class="text-4xl font-bold text-gray-900 mb-3">🔥 SEZONUN ÇOK SATANLARI</h2>
+          <p class="text-xl text-gray-600">Bu sezonun en çok tercih edilen ürünleri</p>
+        </div>
+        
+        <!-- Loading skeleton -->
+        <div v-if="isLoadingBestsellers" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div v-for="i in 12" :key="i" class="bg-white rounded-2xl shadow-sm overflow-hidden animate-pulse border">
+            <div class="h-48 bg-gray-200"></div>
+            <div class="p-6 space-y-3">
+              <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+              <div class="h-6 bg-gray-200 rounded w-1/3"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Error state -->
+        <div v-else-if="bestsellersError" class="text-center py-12">
+          <div class="max-w-md mx-auto">
+            <Icon name="ph:warning-circle" class="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <p class="text-red-600 mb-6 text-lg">{{ bestsellersError.message }}</p>
+            <UiButton @click="retryBestsellers" variant="danger" size="lg">
+              Tekrar Dene
+            </UiButton>
+          </div>
+        </div>
+        
+        <!-- Empty state -->
+        <div v-else-if="bestsellerProducts && bestsellerProducts.length === 0" class="text-center py-12">
+          <Icon name="ph:fire" class="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <p class="text-gray-500 text-lg">Şu anda çok satan ürün bulunmamaktadır.</p>
+        </div>
+        
+        <!-- Products Swiper -->
+        <div v-else-if="bestsellerProducts" class="relative">
+          <Swiper
+            :modules="swiperModules"
+            :slides-per-view="1"
+            :space-between="24"
+            :loop="bestsellerProducts.length > 4"
+            :autoplay="{ delay: 4000, disableOnInteraction: false }"
+            :navigation="true"
+            :pagination="{ clickable: true }"
+            :breakpoints="{
+              640: { slidesPerView: 2 },
+              768: { slidesPerView: 3 },
+              1024: { slidesPerView: 4 }
+            }"
+            class="bestsellers-swiper"
+          >
+            <SwiperSlide v-for="product in bestsellerProducts" :key="String(product._id)">
+              <ProductCard
+                :product="product as Product"
+                @add-to-cart="addToCart"
+              />
+            </SwiperSlide>
+          </Swiper>
+        </div>
+        
+        <!-- View all button -->
+        <div v-if="bestsellerProducts && bestsellerProducts.length > 0" class="text-center mt-12">
+          <UiButton to="/bestsellers" variant="primary" size="lg" rounded class="px-10">
+            Tüm Çok Satanları Gör
+            <Icon name="ph:arrow-right" class="ml-2" />
+          </UiButton>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
 <style scoped>
-.page-fade-enter-active {
-  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+/* Smooth loading animations */
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-.page-fade-enter-from {
-  opacity: 0;
-  transform: translateY(20px) scale(0.98);
-}
-
-.page-fade-enter-to {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-
-.page-content {
-  animation: contentSlideUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes contentSlideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
+@keyframes pulse {
+  0%, 100% {
     opacity: 1;
-    transform: translateY(0);
+  }
+  50% {
+    opacity: .5;
   }
 }
 
-.furniture-loader-transition {
-  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+/* Intersection observer trigger styles */
+section[ref] {
+  min-height: 100px;
+}
+
+/* Performance optimizations */
+.container {
+  contain: layout style;
+}
+
+.grid {
+  contain: layout;
+}
+
+/* Smooth transitions */
+.transition-colors {
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+/* Bestsellers Swiper Styles */
+.bestsellers-swiper {
+  padding: 0 0 60px 0;
+  margin: 0 -12px;
+}
+
+:deep(.bestsellers-swiper .swiper-slide) {
+  padding: 0 12px;
+  height: auto;
+}
+
+/* Custom styles for bestsellers swiper navigation */
+:deep(.bestsellers-swiper .swiper-button-next),
+:deep(.bestsellers-swiper .swiper-button-prev) {
+  color: #b45309;
+  background: white;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid #f3f4f6;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  margin-top: -25px;
+}
+
+:deep(.bestsellers-swiper .swiper-button-next:hover),
+:deep(.bestsellers-swiper .swiper-button-prev:hover) {
+  background: #b45309;
+  color: white;
+  border-color: #b45309;
+  transform: scale(1.1);
+}
+
+:deep(.bestsellers-swiper .swiper-button-next:after),
+:deep(.bestsellers-swiper .swiper-button-prev:after) {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+/* Custom styles for bestsellers swiper pagination */
+:deep(.bestsellers-swiper .swiper-pagination) {
+  bottom: 20px;
+}
+
+:deep(.bestsellers-swiper .swiper-pagination-bullet) {
+  width: 10px;
+  height: 10px;
+  background: #d1d5db;
+  opacity: 1;
+  margin: 0 4px;
+}
+
+:deep(.bestsellers-swiper .swiper-pagination-bullet-active) {
+  background: #b45309;
+  transform: scale(1.2);
+}
+
+/* Hide navigation on mobile */
+@media (max-width: 768px) {
+  :deep(.bestsellers-swiper .swiper-button-next),
+  :deep(.bestsellers-swiper .swiper-button-prev) {
+    display: none;
+  }
 }
 </style>
 

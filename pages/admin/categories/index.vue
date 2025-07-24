@@ -374,12 +374,10 @@ const editCategory = (category: Category) => {
 const confirmDelete = (category: Category) => {
   // Don't allow deletion if category has products
   if (category._count?.products && category._count.products > 0) {
-    toast.showToast({
-      title: 'Cannot Delete Category',
-      message: `This category has ${category._count.products} products. Remove or reassign these products before deleting the category.`,
-      type: 'warning',
-      duration: 5000
-    })
+    toast.warning(
+      'Kategori Silinemez',
+      `Bu kategoriye ${category._count.products} ürün bağlı. Ürünleri silmek veya başka bir kategoriye taşımak gerekiyor.`
+    )
     return
   }
   
@@ -404,16 +402,16 @@ const createCategory = async () => {
     
     await fetchCategories()
     closeModals()
-    toast.showToast({
-      message: 'Category created successfully',
-      type: 'success'
-    })
+    toast.success(
+      'Kategori Oluşturuldu',
+      'Kategori başarıyla oluşturuldu'
+    )
   } catch (err: any) {
     console.error('Error creating category:', err)
-    toast.showToast({
-      message: err.data?.message || 'Failed to create category',
-      type: 'error'
-    })
+    toast.error(
+      'Kategori Oluşturulamadı',
+      err.data?.message || 'Kategori oluşturulamadı'
+    )
   } finally {
     formSubmitting.value = false
   }
@@ -438,16 +436,16 @@ const updateCategory = async () => {
     
     await fetchCategories()
     closeModals()
-    toast.showToast({
-      message: 'Category updated successfully',
-      type: 'success'
-    })
+    toast.success(
+      'Kategori Güncellendi',
+      'Kategori başarıyla güncellendi'
+    )
   } catch (err: any) {
     console.error('Error updating category:', err)
-    toast.showToast({
-      message: err.data?.message || 'Failed to update category',
-      type: 'error'
-    })
+    toast.error(
+      'Kategori Güncellenemedi',
+      err.data?.message || 'Kategori güncellenemedi'
+    )
   } finally {
     formSubmitting.value = false
   }
@@ -466,16 +464,16 @@ const deleteCategory = async () => {
     
     await fetchCategories()
     closeModals()
-    toast.showToast({
-      message: 'Category deleted successfully',
-      type: 'success'
-    })
+    toast.success(
+      'Kategori Silindi',
+      'Kategori başarıyla silindi'
+    )
   } catch (err: any) {
     console.error('Error deleting category:', err)
-    toast.showToast({
-      message: err.data?.message || 'Failed to delete category',
-      type: 'error'
-    })
+    toast.error(
+      'Kategori Silinemedi',
+      err.data?.message || 'Kategori silinemedi'
+    )
   } finally {
     formSubmitting.value = false
   }
