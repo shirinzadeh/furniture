@@ -1,36 +1,37 @@
 <template>
   <Teleport to="body">
-    <div class="toast-container fixed top-4 right-4 z-50 space-y-3 max-w-sm w-full">
+    <div class="toast-container fixed top-4 left-4 right-4 sm:right-4 sm:left-auto sm:max-w-sm z-50 space-y-2 sm:space-y-3 w-auto sm:w-full">
       <TransitionGroup name="toast" tag="div">
-        <div
-          v-for="toast in toasts"
-          :key="toast.id"
-          :class="[
-            'toast-item rounded-lg border p-4 shadow-lg backdrop-blur-sm transition-all duration-300',
-            getToastClasses(toast.type)
-          ]"
-        >
+                  <div
+            v-for="toast in toasts"
+            :key="toast.id"
+            :class="[
+              'toast-item rounded-lg border p-3 sm:p-4 shadow-lg backdrop-blur-sm transition-all duration-300',
+              getToastClasses(toast.type)
+            ]"
+          >
           <div class="flex items-start">
             <!-- Icon -->
             <div class="flex-shrink-0">
               <Icon 
                 :name="getToastIcon(toast.type)" 
-                size="20" 
+                size="18" 
+                class="sm:w-5 sm:h-5"
                 :class="getIconColor(toast.type)"
               />
             </div>
             
             <!-- Content -->
-            <div class="ml-3 flex-1">
+            <div class="ml-2 sm:ml-3 flex-1">
               <!-- Title -->
-              <h4 class="text-sm font-semibold">
+              <h4 class="text-xs sm:text-sm font-semibold">
                 {{ toast.title }}
               </h4>
               
               <!-- Message -->
               <p 
                 v-if="toast.message" 
-                class="mt-1 text-sm opacity-90"
+                class="mt-0.5 sm:mt-1 text-xs sm:text-sm opacity-90"
               >
                 {{ toast.message }}
               </p>
@@ -38,14 +39,14 @@
               <!-- Actions -->
               <div 
                 v-if="toast.actions && toast.actions.length > 0" 
-                class="mt-3 flex gap-2"
+                class="mt-2 sm:mt-3 flex gap-1.5 sm:gap-2"
               >
                 <button
                   v-for="action in toast.actions"
                   :key="action.label"
                   @click="action.action"
                   :class="[
-                    'text-xs px-3 py-1 rounded-md font-medium transition-colors',
+                    'text-[10px] sm:text-xs px-2 sm:px-3 py-1 rounded-md font-medium transition-colors',
                     action.primary 
                       ? 'bg-white/20 hover:bg-white/30 border border-current' 
                       : 'hover:bg-white/10'
@@ -59,9 +60,9 @@
             <!-- Close button -->
             <button
               @click="removeToast(toast.id)"
-              class="flex-shrink-0 ml-2 opacity-60 hover:opacity-100 transition-opacity"
+              class="flex-shrink-0 ml-1 sm:ml-2 opacity-60 hover:opacity-100 transition-opacity"
             >
-              <Icon name="mdi:close" size="16" />
+              <Icon name="mdi:close" size="14" class="sm:w-4 sm:h-4" />
             </button>
           </div>
         </div>
@@ -134,15 +135,36 @@ const getIconColor = (type: string) => {
 
 .toast-enter-from {
   opacity: 0;
-  transform: translateX(100%) scale(0.8);
+  transform: translateY(-20px) scale(0.95);
 }
 
 .toast-leave-to {
   opacity: 0;
-  transform: translateX(100%) scale(0.8);
+  transform: translateY(-20px) scale(0.95);
+}
+
+/* Mobile-specific animations */
+@media (min-width: 640px) {
+  .toast-enter-from {
+    opacity: 0;
+    transform: translateX(100%) scale(0.8);
+  }
+
+  .toast-leave-to {
+    opacity: 0;
+    transform: translateX(100%) scale(0.8);
+  }
 }
 
 .toast-move {
   transition: transform 0.3s ease;
+}
+
+/* Ensure toasts work well with mobile viewports */
+@media (max-width: 639px) {
+  .toast-container {
+    /* Account for mobile browser chrome and potential notches */
+    top: max(4rem, env(safe-area-inset-top, 4rem)) !important;
+  }
 }
 </style> 

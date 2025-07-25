@@ -7,7 +7,6 @@ import { UserModel } from '~/server/models/User'
 
 // Sample seed data
 const categories = [
-  { name: 'Living Room', slug: 'living-room', image: '/images/categories/living-room.webp', featured: true },
   { name: 'Bedroom', slug: 'bedroom', image: '/images/categories/bedroom.webp', featured: true },
   { name: 'Dining Room', slug: 'dining-room', image: '/images/categories/dining-room.jpeg', featured: true },
   { name: 'Office', slug: 'office', image: '/images/categories/office.webp', featured: true },
@@ -29,7 +28,7 @@ const products = [
       '/images/products/modern-sofa.webp',
     ],
     featured: true,
-    categorySlug: 'living-room'
+    categorySlug: 'bedroom'
   },
   {
     name: 'Coffee Table',
@@ -43,7 +42,7 @@ const products = [
       '/images/products/coffee-table.jpg',
     ],
     featured: false,
-    categorySlug: 'living-room'
+    categorySlug: 'bedroom'
   },
   
   // Bedroom Products
@@ -213,7 +212,7 @@ const products = [
       '/images/products/accent-chair-2.webp'
     ],
     featured: true,
-    categorySlug: 'living-room'
+    categorySlug: 'bedroom'
   },
   {
     name: 'Media Console',

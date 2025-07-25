@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import type { Product } from '~/types'
 import { useCartStore } from '~/stores'
 import useFavoritesStore from '~/stores/favorites'
@@ -148,7 +148,8 @@ const isHovered = ref(false)
 const currentImageIndex = ref(0)
 const imageLoaded = ref(false)
 const imageError = ref(false)
-const showSkeleton = ref(true)
+const showSkeleton = ref(false)
+const skeletonTimer = ref<NodeJS.Timeout | null>(null)
 
 // Change image on hover if multiple images exist
 const handleMouseEnter = () => {
@@ -158,7 +159,17 @@ const handleMouseEnter = () => {
     // Reset loading state for hover image
     imageLoaded.value = false
     imageError.value = false
-    showSkeleton.value = true
+    showSkeleton.value = false
+    
+    // Start skeleton timer for alternate image
+    if (skeletonTimer.value) {
+      clearTimeout(skeletonTimer.value)
+    }
+    skeletonTimer.value = setTimeout(() => {
+      if (!imageLoaded.value && !imageError.value) {
+        showSkeleton.value = true
+      }
+    }, 200) // Shorter delay for hover since user expects faster interaction
   }
 }
 
@@ -168,20 +179,39 @@ const handleMouseLeave = () => {
   // Reset loading state for main image
   imageLoaded.value = false
   imageError.value = false
-  showSkeleton.value = true
+  showSkeleton.value = false
+  
+  // Clear any existing timer and start new one for main image
+  if (skeletonTimer.value) {
+    clearTimeout(skeletonTimer.value)
+  }
+  skeletonTimer.value = setTimeout(() => {
+    if (!imageLoaded.value && !imageError.value) {
+      showSkeleton.value = true
+    }
+  }, 300)
 }
 
 // Handle image loading
 const handleImageLoad = () => {
   imageLoaded.value = true
   imageError.value = false
-  // Hide skeleton with a small delay for smooth transition
-  setTimeout(() => {
-    showSkeleton.value = false
-  }, 100)
+  showSkeleton.value = false
+  
+  // Clear skeleton timer if image loads quickly
+  if (skeletonTimer.value) {
+    clearTimeout(skeletonTimer.value)
+    skeletonTimer.value = null
+  }
 }
 
 const handleImageError = () => {
+  // Clear skeleton timer if image fails
+  if (skeletonTimer.value) {
+    clearTimeout(skeletonTimer.value)
+    skeletonTimer.value = null
+  }
+  
   // If primary image fails, try placeholder
   const currentSrc = props.product.images[currentImageIndex.value]
   if (currentSrc && currentSrc !== '/images/placeholder.jpg') {
@@ -199,10 +229,25 @@ onMounted(async () => {
   // Initialize stores if not already done
   await favoritesStore.initFavorites()
   
-  // Reset image loading state
-  imageLoaded.value = false
-  imageError.value = false
-  showSkeleton.value = true
+  // Start skeleton timer - only show skeleton if image takes longer than 300ms to load
+  skeletonTimer.value = setTimeout(() => {
+    if (!imageLoaded.value && !imageError.value) {
+      showSkeleton.value = true
+    }
+  }, 300)
+  
+      // Reset image loading state
+    imageLoaded.value = false
+    imageError.value = false
+    showSkeleton.value = false
+})
+
+// Cleanup timer when component unmounts
+onUnmounted(() => {
+  if (skeletonTimer.value) {
+    clearTimeout(skeletonTimer.value)
+    skeletonTimer.value = null
+  }
 })
 </script>
 

@@ -6,12 +6,7 @@ import { hashPassword } from './auth'
 
 // Sample data for categories
 const categories = [
-  {
-    name: 'Living Room',
-    slug: 'living-room',
-    description: 'Furniture for your living room',
-    image: '/images/categories/living-room.jpg'
-  },
+
   {
     name: 'Bedroom',
     slug: 'bedroom',

@@ -258,7 +258,7 @@ onUnmounted(() => {
           <NuxtLink 
             v-if="authStore.isAuthenticated" 
             to="/account" 
-            class="flex items-center px-3 py-2 rounded-lg text-gray-700 hover:text-amber-700 hover:bg-amber-50 transition-all duration-200 group"
+            class="flex items-center p-2 sm:px-3 sm:py-2 rounded-lg text-gray-700 hover:text-amber-700 hover:bg-amber-50 transition-all duration-200 group"
           >
             <Icon name="ph:user" size="24" class="group-hover:scale-110 transition-transform duration-200" />
             <span class="hidden md:inline ml-2 font-medium">Hesabım</span>
@@ -268,7 +268,7 @@ onUnmounted(() => {
           <NuxtLink 
             v-else
             to="/login" 
-            class="flex items-center px-3 py-2 rounded-lg text-gray-700 hover:text-amber-700 hover:bg-amber-50 transition-all duration-200 group"
+            class="flex items-center p-2 sm:px-3 sm:py-2 rounded-lg text-gray-700 hover:text-amber-700 hover:bg-amber-50 transition-all duration-200 group"
           >
             <Icon name="ph:user" size="24" class="group-hover:scale-110 transition-transform duration-200" />
             <span class="hidden md:inline ml-2 font-medium">Giriş Yap</span>
@@ -277,7 +277,7 @@ onUnmounted(() => {
           <!-- Favorites link -->
           <NuxtLink 
             to="/favorites" 
-            class="flex items-center px-3 py-2 rounded-lg text-gray-700 hover:text-amber-700 hover:bg-amber-50 transition-all duration-200 group relative"
+            class="flex items-center p-2 sm:px-3 sm:py-2rounded-lg text-gray-700 hover:text-amber-700 hover:bg-amber-50 transition-all duration-200 group relative"
           >
             <Icon name="ph:heart" size="24" class="group-hover:scale-110 transition-transform duration-200" />
             <span class="hidden lg:inline ml-2 font-medium">Favoriler</span>
@@ -286,7 +286,7 @@ onUnmounted(() => {
           <!-- Cart link with enhanced badge -->
           <NuxtLink 
             to="/cart" 
-            class="flex items-center px-3 py-2 rounded-lg text-gray-700 hover:text-amber-700 hover:bg-amber-50 transition-all duration-200 group relative"
+            class="flex items-center p-2 sm:px-3 sm:py-2 rounded-lg text-gray-700 hover:text-amber-700 hover:bg-amber-50 transition-all duration-200 group relative"
           >
             <div class="relative">
               <Icon name="ph:shopping-cart" size="24" class="group-hover:scale-110 transition-transform duration-200" />
