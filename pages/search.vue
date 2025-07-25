@@ -163,7 +163,7 @@ const resultsSummary = computed(() => {
     <div class="bg-white shadow-sm border-b border-gray-100">
       <div class="container mx-auto px-4 py-6">
         <div class="text-center">
-          <h1 class="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-2">
+          <h1 class="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-2">
             Arama Sonuçları
           </h1>
           <p v-if="searchQuery" class="text-lg text-gray-600">

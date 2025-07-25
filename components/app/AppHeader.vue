@@ -246,7 +246,7 @@ onUnmounted(() => {
             <div class="w-10 h-10 bg-gradient-to-br from-amber-600 to-amber-800 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-200">
               <Icon name="ph:chair" size="24" class="text-white" />
             </div>
-            <h1 class="text-2xl md:text-3xl font-serif font-bold bg-gradient-to-r from-amber-800 to-amber-900 bg-clip-text text-transparent group-hover:from-amber-700 group-hover:to-amber-800 transition-all duration-200">
+            <h1 class="text-xl sm:text-2xl md:text-3xl font-serif font-bold bg-gradient-to-r from-amber-800 to-amber-900 bg-clip-text text-transparent group-hover:from-amber-700 group-hover:to-amber-800 transition-all duration-200">
               MEBEL
             </h1>
           </div>

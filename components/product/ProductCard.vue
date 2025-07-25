@@ -146,24 +146,63 @@ const formatPrice = (price: number) => {
 // Image hover state
 const isHovered = ref(false)
 const currentImageIndex = ref(0)
+const imageLoaded = ref(false)
+const imageError = ref(false)
+const showSkeleton = ref(true)
 
 // Change image on hover if multiple images exist
 const handleMouseEnter = () => {
   isHovered.value = true
   if (props.product.images && props.product.images.length > 1) {
     currentImageIndex.value = 1
+    // Reset loading state for hover image
+    imageLoaded.value = false
+    imageError.value = false
+    showSkeleton.value = true
   }
 }
 
 const handleMouseLeave = () => {
   isHovered.value = false
   currentImageIndex.value = 0
+  // Reset loading state for main image
+  imageLoaded.value = false
+  imageError.value = false
+  showSkeleton.value = true
+}
+
+// Handle image loading
+const handleImageLoad = () => {
+  imageLoaded.value = true
+  imageError.value = false
+  // Hide skeleton with a small delay for smooth transition
+  setTimeout(() => {
+    showSkeleton.value = false
+  }, 100)
+}
+
+const handleImageError = () => {
+  // If primary image fails, try placeholder
+  const currentSrc = props.product.images[currentImageIndex.value]
+  if (currentSrc && currentSrc !== '/images/placeholder.jpg') {
+    // Don't set error state, let it fallback to placeholder
+    return
+  }
+  
+  imageError.value = true
+  imageLoaded.value = false
+  showSkeleton.value = false
 }
 
 // Initialize favorite status when component mounts
 onMounted(async () => {
   // Initialize stores if not already done
   await favoritesStore.initFavorites()
+  
+  // Reset image loading state
+  imageLoaded.value = false
+  imageError.value = false
+  showSkeleton.value = true
 })
 </script>
 
@@ -174,8 +213,8 @@ onMounted(async () => {
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
   >
-    <!-- Quick action buttons that appear on hover -->
-    <div class="absolute top-4 right-4 z-20 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+    <!-- Quick action buttons - always visible on mobile, hover on desktop -->
+    <div class="absolute top-2 right-2 sm:top-4 sm:right-4 z-20 flex flex-col gap-1.5 sm:gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300">
       <button 
         @click="handleAddToFavorites"
         :disabled="togglingFavorite"
@@ -233,16 +272,41 @@ onMounted(async () => {
     </div>
     
     <!-- Product image with hover effect -->
-    <div class="relative aspect-auto overflow-hidden bg-gray-50">
+    <div class="relative aspect-[4/3] overflow-hidden bg-gray-100">
+      <!-- Image Loading Skeleton -->
+      <div 
+        v-if="showSkeleton && !imageLoaded && !imageError"
+        class="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer flex items-center justify-center transition-opacity duration-200"
+      >
+        <div class="bg-gray-300 rounded-full p-3">
+          <Icon name="mdi:image" class="w-8 h-8 text-gray-500" />
+        </div>
+      </div>
+      
+      <!-- Main Image -->
       <div class="w-full h-full transition-all duration-500 ease-out">
-        <NuxtImg
-          :src="product.images[currentImageIndex] || '/images/placeholder.jpg'"
-          :alt="product.name"
-          class="w-full h-full max-h-[296px] object-cover transition-all duration-700 ease-out group-hover:scale-105"
-          format="webp"
-          quality="85"
-          loading="lazy"
-        />
+                  <NuxtImg
+            :src="product.images[currentImageIndex] || '/images/placeholder.jpg'"
+            :alt="product.name"
+            :class="[
+              'w-full h-full object-cover transition-all duration-500 ease-out group-hover:scale-105',
+              imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+            ]"
+            format="webp"
+            quality="85"
+            loading="lazy"
+            @load="handleImageLoad"
+            @error="handleImageError"
+          />
+      </div>
+      
+      <!-- Error State -->
+      <div 
+        v-if="imageError"
+        class="absolute inset-0 bg-gray-100 flex flex-col items-center justify-center text-gray-400"
+      >
+        <Icon name="mdi:image-broken" class="w-12 h-12 mb-2" />
+        <span class="text-sm">Resim yüklenemedi</span>
       </div>
       
       <!-- Discount badge -->
@@ -250,7 +314,7 @@ onMounted(async () => {
         v-if="isOnSale && showDiscount" 
         :class="[
           'discount-badge absolute z-10',
-          labelPosition === 'top-left' ? 'top-3 left-3' : 'top-3 right-3'
+          labelPosition === 'top-left' ? 'top-2 left-2 sm:top-3 sm:left-3' : 'top-2 right-2 sm:top-3 sm:right-3'
         ]"
       >
         -{{ discountPercentage }}%
@@ -258,32 +322,32 @@ onMounted(async () => {
       
       <!-- Hover overlay with "View Details" -->
       <div class="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-        <span class="view-details-btn py-2 px-4 bg-white/90 backdrop-blur-sm text-amber-800 rounded-full text-sm font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+        <span class="view-details-btn py-1.5 px-3 sm:py-2 sm:px-4 bg-white/90 backdrop-blur-sm text-amber-800 rounded-full text-xs sm:text-sm font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
           Ürün Detayları
         </span>
       </div>
     </div>
     
     <!-- Product info -->
-    <div class="p-5 flex flex-col flex-grow">
+    <div class="p-3 sm:p-4 md:p-5 flex flex-col flex-grow">
       <!-- Category tag -->
-      <div class="mb-2">
+      <div class="mb-1 sm:mb-2">
         <span v-if="product.category" class="category-tag">
           {{ product.category.name }}
         </span>
       </div>
       
       <!-- Product name -->
-      <h3 class="text-base font-medium text-gray-900 mb-1 line-clamp-2 group-hover:text-amber-800 transition-colors">
+      <h3 class="text-sm sm:text-base font-medium text-gray-900 mb-1 line-clamp-2 group-hover:text-amber-800 transition-colors">
         {{ product.name }}
       </h3>
       
       <!-- Price section -->
-      <div class="mt-auto pt-3 flex items-baseline">
-        <span v-if="isOnSale" class="price-sale text-lg">{{ formatPrice(product.salePrice || 0) }} TL</span>
-        <span v-else class="price-regular text-lg">{{ formatPrice(product.price) }} TL</span>
+      <div class="mt-auto pt-2 sm:pt-3 flex items-baseline">
+        <span v-if="isOnSale" class="price-sale text-xs sm:text-base md:text-lg">{{ formatPrice(product.salePrice || 0) }} TL</span>
+        <span v-else class="price-regular text-xs sm:text-base md:text-lg">{{ formatPrice(product.price) }} TL</span>
         
-        <span v-if="isOnSale && showOriginalPrice" class="price-old ml-2">
+        <span v-if="isOnSale && showOriginalPrice" class="price-old ml-1 sm:ml-2">
           {{ formatPrice(product.price) }} TL
         </span>
       </div>
@@ -305,33 +369,54 @@ onMounted(async () => {
 
 .action-button {
   position: relative;
-  width: 36px;
-  height: 36px;
+  width: 32px; /* Smaller on mobile */
+  height: 32px; /* Smaller on mobile */
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #4b5563;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); /* Stronger shadow for mobile visibility */
+}
+
+@media (min-width: 640px) {
+  .action-button {
+    width: 36px; /* Original size on sm and up */
+    height: 36px; /* Original size on sm and up */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* Lighter shadow for desktop */
+  }
 }
 
 .discount-badge {
   background-color: #d97706; /* amber-600 */
   color: white;
-  font-size: 0.75rem;
+  font-size: 0.625rem; /* Smaller on mobile */
   font-weight: 700;
-  padding: 0.25rem 0.75rem;
+  padding: 0.2rem 0.5rem; /* Smaller padding on mobile */
   border-radius: 9999px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+@media (min-width: 640px) {
+  .discount-badge {
+    font-size: 0.75rem; /* Original size on sm and up */
+    padding: 0.25rem 0.75rem; /* Original padding on sm and up */
+  }
+}
+
 .category-tag {
-  font-size: 0.7rem;
+  font-size: 0.625rem; /* Smaller on mobile */
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #78716c; /* stone-500 */
   font-weight: 600;
+}
+
+@media (min-width: 640px) {
+  .category-tag {
+    font-size: 0.7rem; /* Original size on sm and up */
+  }
 }
 
 .price-sale {
@@ -342,7 +427,13 @@ onMounted(async () => {
 .price-old {
   text-decoration: line-through;
   color: #9ca3af; /* gray-400 */
-  font-size: 0.875em;
+  font-size: 0.8em; /* Slightly smaller on mobile */
+}
+
+@media (min-width: 640px) {
+  .price-old {
+    font-size: 0.875em; /* Original size on sm and up */
+  }
 }
 
 .price-regular {
@@ -376,5 +467,20 @@ onMounted(async () => {
 
 .product-card:hover .view-details-btn {
   opacity: 1;
+}
+
+/* Custom shimmer animation for image loading */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s ease-in-out infinite;
+  background-size: 200% 100%;
 }
 </style> 

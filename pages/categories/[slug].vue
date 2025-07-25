@@ -290,7 +290,7 @@ onMounted(fetchCategoryData)
       <div class="absolute inset-0 pattern-bg opacity-10"></div>
       <div class="container mx-auto px-4 py-12 md:py-16 relative z-10">
         <div class="max-w-4xl">
-          <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-gray-900 leading-tight">
+          <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-gray-900 leading-tight">
             <span class="relative inline-block">
               <span class="relative z-10">{{ category.name }}</span>
               <span class="absolute bottom-2 left-0 w-full h-3 bg-amber-200 opacity-50 -z-10"></span>
@@ -328,7 +328,7 @@ onMounted(fetchCategoryData)
       <!-- Loading state -->
       <div v-if="isLoading">
         <div class="h-8 bg-gray-200 animate-pulse rounded mb-8 w-1/4"></div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
           <div v-for="i in 8" :key="i" class="bg-gray-200 animate-pulse rounded-xl h-80"></div>
         </div>
       </div>
@@ -396,7 +396,7 @@ onMounted(fetchCategoryData)
         </div>
         
         <div v-else>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+          <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
             <ProductCard 
               v-for="product in products" 
               :key="product.id" 
@@ -440,7 +440,7 @@ onMounted(fetchCategoryData)
           <!-- Related Categories Section -->
           <div v-if="categoriesStore.categories.length > 1 && category" class="mt-20 pt-12 border-t border-gray-100">
             <div class="flex justify-between items-center mb-8">
-              <h2 class="text-2xl font-bold text-gray-900">
+              <h2 class="text-xl sm:text-2xl font-bold text-gray-900">
                 <span class="relative inline-block">
                   <span class="relative z-10">Diğer Kategoriler</span>
                   <span class="absolute bottom-1 left-0 w-full h-2 bg-amber-200 opacity-40 -z-10"></span>

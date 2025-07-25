@@ -100,7 +100,7 @@ onMounted(() => {
     
     <div class="container mx-auto px-4 pb-16">
       <!-- Loading State -->
-      <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div v-if="isLoading" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         <div 
           v-for="i in itemsPerPage" 
           :key="i" 
@@ -119,7 +119,7 @@ onMounted(() => {
       </div>
       
       <!-- Products Grid -->
-      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div v-else class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         <ProductCard 
           v-for="product in bestSellerProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)" 
           :key="product.id" 

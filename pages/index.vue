@@ -126,12 +126,12 @@ const addToCart = (productId: string) => {
     <section ref="winterSaleRef" class="py-16 bg-gradient-to-br from-red-50 via-orange-50 to-amber-50">
       <div class="container mx-auto px-4">
         <div class="text-center mb-12">
-          <h2 class="text-4xl font-bold text-gray-900 mb-3">❄️ KIŞ FLASH İNDİRİMLERİ</h2>
+          <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3">❄️ KIŞ FLASH İNDİRİMLERİ</h2>
           <p class="text-xl text-gray-600">Kış indirimleri başladı! Sınırlı süre fırsatları kaçırmayın.</p>
         </div>
         
         <!-- Loading skeleton -->
-        <div v-if="isLoadingWinterSale" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div v-if="isLoadingWinterSale" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <div v-for="i in 8" :key="i" class="bg-white rounded-2xl shadow-sm overflow-hidden animate-pulse">
             <div class="h-48 bg-gray-200"></div>
             <div class="p-6 space-y-3">
@@ -160,7 +160,7 @@ const addToCart = (productId: string) => {
         </div>
         
         <!-- Products grid -->
-        <div v-else-if="winterFlashSaleProducts" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div v-else-if="winterFlashSaleProducts" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12">
           <ProductCard
             v-for="product in winterFlashSaleProducts"
             :key="String(product._id)"
@@ -191,12 +191,12 @@ const addToCart = (productId: string) => {
     <section class="py-16 bg-white">
       <div class="container mx-auto px-4">
         <div class="text-center mb-12">
-          <h2 class="text-4xl font-bold text-gray-900 mb-3">⭐ Öne Çıkan Ürünler</h2>
+          <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3">⭐ Öne Çıkan Ürünler</h2>
           <p class="text-xl text-gray-600">En popüler ve kaliteli mobilyalarımız</p>
         </div>
         
         <!-- Loading skeleton -->
-        <div v-if="productsStore.loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div v-if="productsStore.loading" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <div v-for="i in 8" :key="i" class="bg-white rounded-2xl shadow-sm overflow-hidden animate-pulse border">
             <div class="h-48 bg-gray-200"></div>
             <div class="p-6 space-y-3">
@@ -225,7 +225,7 @@ const addToCart = (productId: string) => {
         </div>
         
         <!-- Products grid -->
-        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div v-else class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12">
           <ProductCard
             v-for="product in productsStore.featuredProducts"
             :key="String(product._id)"
@@ -252,7 +252,7 @@ const addToCart = (productId: string) => {
             <div class="bg-white w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300">
               <Icon name="mdi:truck-delivery" class="w-10 h-10 text-amber-600" />
             </div>
-            <h3 class="text-2xl font-bold mb-3 text-gray-900">Hızlı Teslimat</h3>
+            <h3 class="text-lg sm:text-xl md:text-2xl font-bold mb-3 text-gray-900">Hızlı Teslimat</h3>
             <p class="text-gray-600 text-lg">Siparişleriniz en kısa sürede adresinize teslim edilir.</p>
           </div>
           
@@ -260,7 +260,7 @@ const addToCart = (productId: string) => {
             <div class="bg-white w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300">
               <Icon name="mdi:credit-card" class="w-10 h-10 text-amber-600" />
             </div>
-            <h3 class="text-2xl font-bold mb-3 text-gray-900">Güvenli Ödeme</h3>
+            <h3 class="text-lg sm:text-xl md:text-2xl font-bold mb-3 text-gray-900">Güvenli Ödeme</h3>
             <p class="text-gray-600 text-lg">Tüm ödemeleriniz güvenli bir şekilde gerçekleştirilir.</p>
           </div>
           
@@ -268,7 +268,7 @@ const addToCart = (productId: string) => {
             <div class="bg-white w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300">
               <Icon name="mdi:headset" class="w-10 h-10 text-amber-600" />
             </div>
-            <h3 class="text-2xl font-bold mb-3 text-gray-900">7/24 Destek</h3>
+            <h3 class="text-lg sm:text-xl md:text-2xl font-bold mb-3 text-gray-900">7/24 Destek</h3>
             <p class="text-gray-600 text-lg">Sorularınız için müşteri hizmetlerimiz her zaman yanınızda.</p>
           </div>
         </div>
@@ -279,12 +279,12 @@ const addToCart = (productId: string) => {
     <section ref="recommendedRef" class="py-16 bg-gradient-to-br from-amber-50 to-orange-50">
       <div class="container mx-auto px-4">
         <div class="text-center mb-12">
-          <h2 class="text-4xl font-bold text-gray-900 mb-3">💡 Size Özel Öneriler</h2>
+          <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3">💡 Size Özel Öneriler</h2>
           <p class="text-xl text-gray-600">Seçimlerinize göre özenle seçilmiş ürünler</p>
         </div>
         
         <!-- Loading skeleton -->
-        <div v-if="isLoadingRecommended" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div v-if="isLoadingRecommended" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <div v-for="i in 8" :key="i" class="bg-white rounded-2xl shadow-sm overflow-hidden animate-pulse">
             <div class="h-48 bg-gray-200"></div>
             <div class="p-6 space-y-3">
@@ -313,7 +313,7 @@ const addToCart = (productId: string) => {
         </div>
         
         <!-- Products grid -->
-        <div v-else-if="recommendedProducts" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div v-else-if="recommendedProducts" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <ProductCard
             v-for="product in recommendedProducts"
             :key="String(product._id)"
@@ -328,12 +328,12 @@ const addToCart = (productId: string) => {
     <section ref="bestsellersRef" class="py-16 bg-white">
       <div class="container mx-auto px-4">
         <div class="text-center mb-12">
-          <h2 class="text-4xl font-bold text-gray-900 mb-3">🔥 SEZONUN ÇOK SATANLARI</h2>
+          <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3">🔥 SEZONUN ÇOK SATANLARI</h2>
           <p class="text-xl text-gray-600">Bu sezonun en çok tercih edilen ürünleri</p>
         </div>
         
         <!-- Loading skeleton -->
-        <div v-if="isLoadingBestsellers" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div v-if="isLoadingBestsellers" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <div v-for="i in 12" :key="i" class="bg-white rounded-2xl shadow-sm overflow-hidden animate-pulse border">
             <div class="h-48 bg-gray-200"></div>
             <div class="p-6 space-y-3">

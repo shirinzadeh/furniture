@@ -1,0 +1,47 @@
+Son aylarda bir mebel e-ticarət platformu üzərində işləyirdim. 
+
+MEBEL adlı bu layihə həqiqətən fərqli bir şey oldu. Sadə bir alış-veriş saytı deyil - müştərilərin evlərini necə tərtib etmək istədiklərini anlayan bir platforma.
+
+Nə etdim:
+• Nuxt 3 və TypeScript istifadə edərək tam responsive dizayn
+• MongoDB ilə məhsul kataloqu və istifadəçi idarəetməsi  
+• Admin paneli - mağaza sahibləri özləri məhsul əlavə edə bilər
+• Səbət, favorilər, mövsümi endirimler
+• Məhsul axtarışı və filtrlər
+
+Amma ən maraqlısı - performance optimization idi. Lazy loading, infinite scroll, image caching. Sayt həqiqətən sürətli.
+
+Yaşadıqlarımızdan biri: İlk versiyada bütün məhsulları eyni anda load edirdik. Nəticə? 5 saniyə loading time. İndi eyni səhifə 1.2 saniyədə açılır.
+
+Azerbaycan bazarında belə layihələr hələ az olduğu üçün real challenge idi. Türk dilində SEO, local ödəniş sistemləri, hətta müştəri davranışları - hər şey fərqli.
+
+Github-da açıq kod olaraq paylaşmayı düşünürəm. Digər developerlərin də faydalana biləcəyi şeylər var.
+
+Sonrakı addım: AI recommendation engine əlavə etmək. Müştərilərin keçmiş seçimlərinə əsasən təkliflər verən sistem.
+
+#webdevelopment #nuxt3 #ecommerce #javascript #azerbaijan
+
+---
+
+Just finished building a furniture e-commerce platform called MEBEL. 
+
+What started as a simple online store became something much bigger. We ended up creating a full ecosystem for furniture shopping.
+
+The tech stack:
+• Nuxt 3 with TypeScript for the frontend
+• MongoDB for product catalog and user management
+• Pinia for state management
+• TailwindCSS for styling
+• Full admin dashboard
+
+But here's what I'm proud of - the user experience. We built lazy loading that actually works. Winter flash sales section only loads when users scroll to it. Featured products load immediately while recommendations load in the background.
+
+The admin panel is pretty solid too. Store owners can upload product images, manage inventory, and track sales without touching any code.
+
+One thing that surprised me: infinite scroll was trickier than expected. First attempt broke on mobile. Took three tries to get the intersection observer working properly across all devices.
+
+The codebase has some nice patterns for other developers. Clean separation between UI components and business logic. API composables that handle caching automatically. Error boundaries that actually help users recover.
+
+Planning to add AI-powered recommendations next. The foundation is already there.
+
+#webdev #nuxt #vue #ecommerce #furniture #typescript

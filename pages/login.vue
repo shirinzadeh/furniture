@@ -2,10 +2,10 @@
   <div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
     <div class="sm:mx-auto sm:w-full sm:max-w-md">
       <div class="text-center">
-        <NuxtLink to="/" class="text-3xl font-serif font-bold text-amber-900">
+        <NuxtLink to="/" class="text-2xl sm:text-3xl font-serif font-bold text-amber-900">
           MEBEL
         </NuxtLink>
-        <h2 class="mt-6 text-3xl font-extrabold text-gray-900">
+        <h2 class="mt-6 text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-900">
           Hesabınıza Giriş Yapın
         </h2>
         <p class="mt-2 text-sm text-gray-600">

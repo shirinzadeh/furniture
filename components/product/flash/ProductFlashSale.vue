@@ -48,7 +48,7 @@ const handleAddToCart = (productId: string) => {
     <div class="container mx-auto px-4">
       <!-- Section Header -->
       <div class="text-center mb-8">
-        <h2 class="text-3xl font-bold mb-2">{{ title }}</h2>
+        <h2 class="text-2xl sm:text-3xl font-bold mb-2">{{ title }}</h2>
         <p v-if="subtitle" class="text-gray-600">{{ subtitle }}</p>
       </div>
       

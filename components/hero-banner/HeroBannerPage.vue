@@ -117,7 +117,7 @@ const decorativeColor2 = computed(() => {
   <div class="relative overflow-hidden" :class="['bg-gradient-to-r', gradientClasses]">
     <div class="container mx-auto px-4 py-16 md:py-24">
       <div class="max-w-3xl relative z-10">
-        <h1 class="text-3xl md:text-5xl font-serif font-medium text-gray-900 mb-6">
+        <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif font-medium text-gray-900 mb-6">
           <template v-if="highlightedText">
             {{ title.replace(highlightedText, '') }} <span :class="accentColor">{{ highlightedText }}</span>
           </template>

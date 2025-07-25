@@ -5,13 +5,13 @@
       <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">Favorilerim</h1>
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Favorilerim</h1>
             <p class="text-gray-600">
               Beğendiğiniz ürünleri burada bulabilirsiniz
             </p>
           </div>
           <div class="text-right">
-            <div class="text-2xl font-bold text-amber-600">
+            <div class="text-lg sm:text-xl md:text-2xl font-bold text-amber-600">
               {{ favoritesStore.favoriteCount }}
             </div>
             <div class="text-sm text-gray-500">favori ürün</div>
@@ -66,7 +66,7 @@
 
       <!-- Favorites Grid -->
       <div v-else-if="favoritesStore.hasFavorites">
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
           <div 
             v-for="favorite in favoritesStore.favorites" 
             :key="favorite.id"

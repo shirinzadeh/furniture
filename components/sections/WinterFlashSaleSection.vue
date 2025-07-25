@@ -41,7 +41,7 @@ const handleAddToCart = (productId: string) => {
   <section class="py-12 bg-gray-50">
     <div class="container mx-auto px-4">
       <div class="flex justify-between items-center mb-8">
-        <h2 class="text-3xl font-bold">Kış Fırsatları</h2>
+        <h2 class="text-2xl sm:text-3xl font-bold">Kış Fırsatları</h2>
         <NuxtLink to="/flash-sale" class="text-blue-600 hover:text-blue-800 font-medium flex items-center">
           Tümünü Gör
           <Icon name="heroicons:arrow-right" class="w-5 h-5 ml-1" />

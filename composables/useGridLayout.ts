@@ -23,7 +23,7 @@ export const useGridLayout = (options: GridLayoutOptions = {}) => {
       '2xl': 4
     },
     gap = 6,
-    minCols = 1,
+    minCols = 2, // Default to 2 columns on mobile
     maxCols = 6
   } = options
 
@@ -44,7 +44,7 @@ export const useGridLayout = (options: GridLayoutOptions = {}) => {
 
   // Common product grid classes
   const productGridClasses = computed(() => {
-    return 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+    return 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6'
   })
 
   // Loading skeleton classes

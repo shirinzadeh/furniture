@@ -191,7 +191,7 @@ onUnmounted(() => {
       </div>
       
       <!-- Loading State -->
-      <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div v-if="isLoading" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         <div 
           v-for="i in 8" 
           :key="i" 
@@ -210,7 +210,7 @@ onUnmounted(() => {
       </div>
       
       <!-- Products Grid -->
-      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div v-else class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         <ProductCard 
           v-for="product in products" 
           :key="product.id" 

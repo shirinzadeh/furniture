@@ -47,7 +47,7 @@ useHead({
 
 <template>
   <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-8">Alışveriş Sepeti</h1>
+          <h1 class="text-2xl sm:text-3xl font-bold mb-8">Alışveriş Sepeti</h1>
     
     <div v-if="cartStore.isEmpty" class="text-center py-12 bg-gray-50 rounded-lg">
       <Icon name="mdi:cart-outline" size="64" class="mx-auto text-gray-400 mb-4" />

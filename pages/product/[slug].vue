@@ -272,16 +272,16 @@ useHead(() => ({
       
       <!-- Product info -->
       <div class="w-full md:w-1/2">
-        <h1 class="text-3xl font-bold mb-4">{{ product.name }}</h1>
+                      <h1 class="text-xl sm:text-2xl md:text-3xl font-bold mb-4">{{ product.name }}</h1>
         
         <div class="mb-6">
           <div class="flex items-center mb-2">
             <div v-if="product.salePrice" class="flex items-center">
-              <span class="text-2xl font-bold text-red-500">{{ formattedSalePrice }} TL</span>
+                              <span class="text-lg sm:text-xl md:text-2xl font-bold text-red-500">{{ formattedSalePrice }} TL</span>
               <span class="ml-2 text-gray-500 line-through">{{ formattedPrice }} TL</span>
             </div>
             <div v-else>
-              <span class="text-2xl font-bold">{{ formattedPrice }} TL</span>
+                              <span class="text-lg sm:text-xl md:text-2xl font-bold">{{ formattedPrice }} TL</span>
             </div>
           </div>
           

@@ -96,7 +96,7 @@ onMounted(fetchCategories)
       <div class="absolute inset-0 pattern-bg opacity-10"></div>
       <div class="container mx-auto px-4 py-16 md:py-24 relative z-10">
         <div class="max-w-4xl">
-          <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-gray-900 leading-tight">
+          <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-gray-900 leading-tight">
             <span class="relative inline-block">
               <span class="relative z-10">Kategoriler</span>
               <span class="absolute bottom-2 left-0 w-full h-3 bg-amber-200 opacity-50 -z-10"></span>
@@ -128,7 +128,7 @@ onMounted(fetchCategories)
       </div>
       
       <!-- Loading State -->
-      <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+              <div v-if="isLoading" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
         <div 
           v-for="i in 8" 
           :key="i" 
@@ -219,7 +219,7 @@ onMounted(fetchCategories)
         <!-- Featured Categories Section (Optional) -->
         <div class="mt-16 pt-12 border-t border-gray-100">
           <div class="flex justify-between items-center mb-8">
-            <h2 class="text-2xl font-bold text-gray-900">
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-900">
               <span class="relative inline-block">
                 <span class="relative z-10">Popüler Kategoriler</span>
                 <span class="absolute bottom-1 left-0 w-full h-2 bg-amber-200 opacity-40 -z-10"></span>

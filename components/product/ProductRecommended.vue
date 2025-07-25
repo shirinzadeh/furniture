@@ -160,7 +160,7 @@ const handleAddToCart = (productId: string) => {
     <div class="container mx-auto px-4">
       <!-- Section Header -->
       <div class="text-center mb-8">
-        <h2 class="text-3xl font-bold mb-2">SENİN İÇİN SEÇTİKLERİMİZ</h2>
+        <h2 class="text-2xl sm:text-3xl font-bold mb-2">SENİN İÇİN SEÇTİKLERİMİZ</h2>
         <p class="text-gray-600">Sizin için özenle seçtiğimiz ürünleri keşfedin</p>
       </div>
       

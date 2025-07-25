@@ -62,7 +62,7 @@ const handleAddToCart = (productId: string) => {
     <div class="container mx-auto px-4">
       <div class="flex justify-between items-center mb-8">
         <div>
-          <h2 class="text-3xl font-bold">{{ title }}</h2>
+          <h2 class="text-2xl sm:text-3xl font-bold">{{ title }}</h2>
           <p class="text-gray-600 mt-2">{{ subtitle }}</p>
         </div>
         <NuxtLink :to="viewAllLink" class="text-blue-600 hover:text-blue-800 font-medium flex items-center">

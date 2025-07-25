@@ -42,7 +42,7 @@ const handleAddToCart = (productId: string) => {
     <div class="container mx-auto px-4">
       <div class="flex justify-between items-center mb-8">
         <div>
-          <h2 class="text-3xl font-bold text-rose-900">Süper Fiyatlar</h2>
+          <h2 class="text-2xl sm:text-3xl font-bold text-rose-900">Süper Fiyatlar</h2>
           <p class="text-rose-700 mt-2">Sınırlı zamanlı indirimli fiyatlar</p>
         </div>
         <NuxtLink to="/flash-sale" class="text-rose-600 hover:text-rose-800 font-medium flex items-center">
